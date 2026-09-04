@@ -1,0 +1,87 @@
+{
+  "expo": {
+    "name": "VISTA Transport",
+    "slug": "vista-transport",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "scheme": "vistatransport",
+    "newArchEnabled": true,
+    "ios": {
+      "bundleIdentifier": "ug.vista.transport",
+      "buildNumber": "1",
+      "supportsTablet": false,
+      "config": {
+        "googleMapsApiKey": "$(EXPO_PUBLIC_GOOGLE_MAPS_KEY)"
+      },
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "VISTA needs your location to detect your pickup point and show nearby drivers.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "VISTA needs your location during trips to track your journey and share it with your driver.",
+        "NSCameraUsageDescription": "VISTA needs camera access to take your profile photo.",
+        "NSPhotoLibraryUsageDescription": "VISTA needs photo access to upload your profile photo.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "ug.vista.transport",
+      "adaptiveIcon": {
+        "backgroundColor": "#1B2E6B",
+        "foregroundImage": "./assets/android-icon-foreground.png"
+      },
+      "config": {
+        "googleMaps": {
+          "apiKey": "$(EXPO_PUBLIC_GOOGLE_MAPS_KEY)"
+        }
+      },
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "CAMERA",
+        "READ_EXTERNAL_STORAGE"
+      ]
+    },
+    "plugins": [
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#1B2E6B"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "VISTA needs your location to detect your pickup point and show nearby drivers."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "VISTA needs camera access to take your profile photo."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "VISTA needs photo access to upload your profile photo."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1B2E6B"
+        }
+      ],
+      "@react-native-community/datetimepicker"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "bcf2d568-61f7-4afa-a41e-979a9c8d28cc"
+      }
+    }
+  }
+}
