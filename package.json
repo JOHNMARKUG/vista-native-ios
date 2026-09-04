@@ -27,7 +27,6 @@
     "expo-splash-screen": "~57.0.8",
     "expo-status-bar": "~57.0.1",
     "i18next": "^26.4.2",
-    "moti": "^0.30.0",
     "nativewind": "^4.2.6",
     "react": "19.2.3",
     "react-hook-form": "^7.87.0",

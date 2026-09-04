@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
-import { MotiView } from 'moti';
+import Animated, { FadeIn } from 'react-native-reanimated';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/types';
@@ -21,15 +21,10 @@ export default function SplashScreen({ navigation }: Props) {
 
   return (
     <View style={styles.container}>
-      <MotiView
-        from={{ opacity: 0, scale: 0.85 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ type: 'timing', duration: 500 }}
-        style={{ alignItems: 'center', gap: 14 }}
-      >
+      <Animated.View entering={FadeIn.duration(500)} style={{ alignItems: 'center', gap: 14 }}>
         <Image source={require('../../../assets/vista-logo.png')} style={styles.logo} />
         <Text style={styles.wordmark}>VISTA TRANSPORT</Text>
-      </MotiView>
+      </Animated.View>
     </View>
   );
 }
