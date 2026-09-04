@@ -157,9 +157,26 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
       if (error) throw error;
 
+      supabase.functions
+        .invoke('notify-driver', {
+          body: { ride_id: data.id, pickup: pickup.trim(), dropoff: dropoff.trim(), total_ugx: totalUgx, vehicle_type: vehicle === 'boda' ? 'boda' : 'car' },
+        })
+        .catch(() => {});
+
       if (!isCash) {
+        // Note: pesapal-initiate persists pesapal_transaction_id against the
+        // `bookings` table only (matches the existing web app's behavior for
+        // VISTA Rides too) — the redirect still works, reconciliation of the
+        // transaction id back onto vista_rides is a backend follow-up.
         const { data: pesapal } = await supabase.functions.invoke('pesapal-initiate', {
-          body: { ride_id: data.id, amount: totalUgx, method: payMethod, booking_ref: bookingRef },
+          body: {
+            booking_id: data.id,
+            booking_ref: bookingRef,
+            amount_usd: totalUsd,
+            service_name: 'VISTA Ride',
+            passenger_name: '',
+            passenger_phone: '',
+          },
         });
         if (pesapal?.redirect_url) {
           Linking.openURL(pesapal.redirect_url);

@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
@@ -94,26 +94,30 @@ export default function AirportTransferScreen({ navigation }: Props) {
           ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`
           : `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
 
-      const { error } = await supabase.from('bookings').insert({
-        booking_ref: bookingRef,
-        customer_id: user.id,
-        service_type: direction,
-        pickup_location: pickupLocation,
-        dropoff_location: dropoffLocation,
-        pickup_date: bookingDate,
-        pickup_time: bookingTime,
-        passengers,
-        payment_method: payMethod,
-        special_requests: notes.trim() || null,
-        flight_number: flightNumber.trim().toUpperCase() || null,
-        amount_usd: pricing.totalAmount,
-        amount_ugx: pricing.totalUgx,
-        platform_fee: pricing.platformFee,
-        driver_earnings: pricing.driverEarnings,
-        passenger_name: name.trim(),
-        passenger_phone: phone.trim(),
-        status: mode === 'now' ? 'pending' : 'scheduled',
-      });
+      const { data: booking, error } = await supabase
+        .from('bookings')
+        .insert({
+          booking_ref: bookingRef,
+          customer_id: user.id,
+          service_type: direction,
+          pickup_location: pickupLocation,
+          dropoff_location: dropoffLocation,
+          pickup_date: bookingDate,
+          pickup_time: bookingTime,
+          passengers,
+          payment_method: payMethod,
+          special_requests: notes.trim() || null,
+          flight_number: flightNumber.trim().toUpperCase() || null,
+          amount_usd: pricing.totalAmount,
+          amount_ugx: pricing.totalUgx,
+          platform_fee: pricing.platformFee,
+          driver_earnings: pricing.driverEarnings,
+          passenger_name: name.trim(),
+          passenger_phone: phone.trim(),
+          status: mode === 'now' ? 'pending' : 'scheduled',
+        })
+        .select()
+        .single();
       if (error) throw error;
 
       await supabase.from('notifications').insert({
@@ -124,6 +128,24 @@ export default function AirportTransferScreen({ navigation }: Props) {
             ? `Your airport transfer (${bookingRef}) has been received. Our team will assign a verified driver shortly.`
             : `Your airport transfer (${bookingRef}) is scheduled for ${bookingDate} at ${bookingTime}.`,
       });
+
+      if (payMethod !== 'cash') {
+        const { data: pesapal } = await supabase.functions.invoke('pesapal-initiate', {
+          body: {
+            booking_id: booking.id,
+            booking_ref: bookingRef,
+            amount_usd: pricing.totalAmount,
+            service_name: direction === 'airport_pickup' ? 'Airport Pickup' : 'Airport Departure',
+            passenger_name: name.trim(),
+            passenger_phone: phone.trim(),
+          },
+        });
+        if (pesapal?.redirect_url) {
+          Linking.openURL(pesapal.redirect_url);
+          setSubmitting(false);
+          return;
+        }
+      }
 
       Alert.alert('Booking confirmed', `Reference ${bookingRef}`, [
         { text: 'View my trips', onPress: () => navigation.getParent()?.goBack() },
