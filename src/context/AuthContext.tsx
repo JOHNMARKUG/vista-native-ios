@@ -15,6 +15,7 @@ import {
 } from '@react-native-google-signin/google-signin';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { GOOGLE_IOS_CLIENT_ID } from '../lib/google-auth';
 
 export type Profile = {
   id: string;
@@ -48,15 +49,12 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
-const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
-
-if (GOOGLE_WEB_CLIENT_ID) {
-  GoogleSignin.configure({
-    webClientId: GOOGLE_WEB_CLIENT_ID,
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-  });
-}
+// Configured once here (not per-screen) so there's a single source of truth —
+// calling GoogleSignin.configure() again from LoginScreen would silently
+// overwrite this on every mount.
+GoogleSignin.configure({
+  iosClientId: GOOGLE_IOS_CLIENT_ID,
+});
 
 /**
  * Seeds a profile row for a brand-new user, or quietly touches only the
@@ -185,9 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchProfile]);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!GOOGLE_WEB_CLIENT_ID) {
-      return { error: 'Google sign-in is not configured for this build yet.' };
-    }
     try {
       await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       const response = await GoogleSignin.signIn();
@@ -218,7 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     try {
-      if (GOOGLE_WEB_CLIENT_ID && (await GoogleSignin.getCurrentUser())) {
+      if (await GoogleSignin.getCurrentUser()) {
         await GoogleSignin.signOut();
       }
     } catch {
