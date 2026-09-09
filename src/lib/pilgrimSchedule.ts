@@ -6,11 +6,15 @@
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
+import type { Ionicons } from '@expo/vector-icons';
+
+export type ScheduleIcon = keyof typeof Ionicons.glyphMap;
+
 export type ScheduleDay = {
   date: string;
   dateLabel: string;
   label: string;
-  items: { icon: string; text: string }[];
+  items: { icon: ScheduleIcon; text: string }[];
 };
 
 function fmtDate(d: Date) {
@@ -41,64 +45,64 @@ export function buildSchedule(
     const isLast = i === totalDays - 1;
 
     let label: string;
-    let items: { icon: string; text: string }[];
+    let items: { icon: ScheduleIcon; text: string }[];
 
     if (isFirst) {
       label = 'Arrival Day';
       items = [
-        { icon: '✈️', text: `Airport pickup${arrivalTime ? ` at ${arrivalTime}` : ' at your flight arrival time'}` },
-        { icon: '🏨', text: 'Transfer to your hotel' },
-        { icon: '😴', text: 'Check in and rest' },
+        { icon: 'airplane-outline', text: `Airport pickup${arrivalTime ? ` at ${arrivalTime}` : ' at your flight arrival time'}` },
+        { icon: 'bed-outline', text: 'Transfer to your hotel' },
+        { icon: 'moon-outline', text: 'Check in and rest' },
       ];
     } else if (isLast) {
       label = 'Departure Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup from hotel' },
-        { icon: '✈️', text: `Transfer to Entebbe International Airport${departureTime ? ` for your ${departureTime} flight` : ''}` },
+        { icon: 'car-outline', text: 'Driver pickup from hotel' },
+        { icon: 'airplane-outline', text: `Transfer to Entebbe International Airport${departureTime ? ` for your ${departureTime} flight` : ''}` },
       ];
     } else if (weekday === 5) {
       label = 'Registration Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup at 8:30am' },
-        { icon: '⛪', text: 'Temple Mount Church — registration 9:00am to 5:00pm' },
-        { icon: '🏨', text: 'Return to hotel' },
+        { icon: 'car-outline', text: 'Driver pickup at 8:30am' },
+        { icon: 'business-outline', text: 'Temple Mount Church — registration 9:00am to 5:00pm' },
+        { icon: 'bed-outline', text: 'Return to hotel' },
       ];
     } else if (weekday === 6) {
       label = 'Prayer Line Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup at 6:30am' },
-        { icon: '🙏', text: 'Temple Mount Church — service from 7:00am' },
-        { icon: '⚠️', text: 'Service runs late — your driver waits for you' },
-        { icon: '🏨', text: 'Return to hotel when service ends' },
+        { icon: 'car-outline', text: 'Driver pickup at 6:30am' },
+        { icon: 'people-outline', text: 'Temple Mount Church — service from 7:00am' },
+        { icon: 'alert-circle-outline', text: 'Service runs late — your driver waits for you' },
+        { icon: 'bed-outline', text: 'Return to hotel when service ends' },
       ];
     } else if (weekday === 0) {
       label = 'General Service Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup at 6:30am' },
-        { icon: '🙏', text: 'Temple Mount Church — service from 7:00am' },
-        { icon: '⚠️', text: 'Service runs late — your driver waits for you' },
-        { icon: '🏨', text: 'Return to hotel when service ends' },
+        { icon: 'car-outline', text: 'Driver pickup at 6:30am' },
+        { icon: 'people-outline', text: 'Temple Mount Church — service from 7:00am' },
+        { icon: 'alert-circle-outline', text: 'Service runs late — your driver waits for you' },
+        { icon: 'bed-outline', text: 'Return to hotel when service ends' },
       ];
     } else if (weekday === 1) {
       label = 'Prophet Meeting Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup at 6:30am' },
-        { icon: '👐', text: 'Temple Mount Church — international visitors meet the Prophet, from 7:00am' },
-        { icon: '⚠️', text: 'Service runs very late — your driver waits for you' },
-        { icon: '🏨', text: 'Return to hotel when service ends' },
+        { icon: 'car-outline', text: 'Driver pickup at 6:30am' },
+        { icon: 'people-outline', text: 'Temple Mount Church — international visitors meet the Prophet, from 7:00am' },
+        { icon: 'alert-circle-outline', text: 'Service runs very late — your driver waits for you' },
+        { icon: 'bed-outline', text: 'Return to hotel when service ends' },
       ];
     } else if (weekday === 2) {
       label = 'Prophet Appointment Day';
       items = [
-        { icon: '🚗', text: 'Driver pickup from hotel' },
-        { icon: '📅', text: 'Prophet appointment during the day' },
-        { icon: '🏨', text: 'Return to hotel' },
+        { icon: 'car-outline', text: 'Driver pickup from hotel' },
+        { icon: 'calendar-outline', text: 'Prophet appointment during the day' },
+        { icon: 'bed-outline', text: 'Return to hotel' },
       ];
     } else {
       label = 'Free Day';
       items = [
-        { icon: '😌', text: 'No church program today — rest at your hotel' },
-        { icon: '🚗', text: 'Your driver is on call if you need to go anywhere in the city' },
+        { icon: 'sunny-outline', text: 'No church program today — rest at your hotel' },
+        { icon: 'car-outline', text: 'Your driver is on call if you need to go anywhere in the city' },
       ];
     }
 
@@ -117,12 +121,12 @@ export const PACKAGE_TIERS = {
     price: 150,
     mostPopular: true,
     bullets: [
-      { icon: '✈️', text: 'Arrive Thursday' },
-      { icon: '⛪', text: 'Registration Friday' },
-      { icon: '🙏', text: 'Prayer line Saturday' },
-      { icon: '🙏', text: 'General service Sunday' },
-      { icon: '👐', text: 'Meet the Prophet Monday' },
-      { icon: '✈️', text: 'Depart Tuesday' },
+      { icon: 'airplane-outline', text: 'Arrive Thursday' },
+      { icon: 'business-outline', text: 'Registration Friday' },
+      { icon: 'people-outline', text: 'Prayer line Saturday' },
+      { icon: 'people-outline', text: 'General service Sunday' },
+      { icon: 'people-outline', text: 'Meet the Prophet Monday' },
+      { icon: 'airplane-outline', text: 'Depart Tuesday' },
     ],
   },
   extended: {
@@ -132,9 +136,9 @@ export const PACKAGE_TIERS = {
     subtitle: 'Thursday → Wednesday',
     price: 180,
     bullets: [
-      { icon: '✓', text: 'Everything in Standard, plus:' },
-      { icon: '📅', text: 'Prophet appointment Tuesday' },
-      { icon: '✈️', text: 'Depart Wednesday' },
+      { icon: 'checkmark-outline', text: 'Everything in Standard, plus:' },
+      { icon: 'calendar-outline', text: 'Prophet appointment Tuesday' },
+      { icon: 'airplane-outline', text: 'Depart Wednesday' },
     ],
   },
   custom: {

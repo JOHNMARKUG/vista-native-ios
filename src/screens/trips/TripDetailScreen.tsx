@@ -112,7 +112,7 @@ export default function TripDetailScreen({ route, navigation }: Props) {
           <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
           <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
         </Pressable>
-        <Text style={{ fontSize: 12, fontWeight: '700', color: colors.gold }}>{trip.booking_ref}</Text>
+        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{trip.booking_ref}</Text>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }}>
@@ -153,14 +153,14 @@ export default function TripDetailScreen({ route, navigation }: Props) {
                 )}
               </View>
             </View>
-            <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 12, padding: 12, marginBottom: 14 }}>
+            <View style={{ backgroundColor: 'rgba(255,255,255,0.08)', borderRadius: 8, padding: 12, marginBottom: 14 }}>
               <Text style={{ color: '#FFFFFF', fontSize: 13, fontWeight: '600' }}>
                 {driver.vehicle_color} {driver.vehicle_make} {driver.vehicle_model}
               </Text>
               <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, marginTop: 4 }}>Plate: {driver.plate_number}</Text>
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
-              <VISTAButton title="Call" variant="outline" onPress={() => Linking.openURL(`tel:${driver.phone}`)} />
+              <VISTAButton title="Call" variant="outlineLight" onPress={() => Linking.openURL(`tel:${driver.phone}`)} />
               <VISTAButton
                 title="WhatsApp"
                 variant="accent"

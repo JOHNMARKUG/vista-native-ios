@@ -16,8 +16,10 @@ export default function VISTACard({ padded = true, elevated = true, style, child
           backgroundColor: colors.card,
           borderRadius: radius.card,
           padding: padded ? spacing.md : 0,
+          borderWidth: elevated ? 0 : 1,
+          borderColor: colors.border,
         },
-        elevated ? shadows.card : shadows.subtle,
+        elevated ? shadows.card : null,
         style,
       ]}
     >

@@ -18,7 +18,7 @@ import {
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 type Hotel = { id: string; name: string; area?: string | null };
 type Props = NativeStackScreenProps<HomeStackParamList, 'PilgrimagePackage'>;
@@ -175,7 +175,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
           <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
           <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
         </Pressable>
-        <Text style={{ color: colors.gold, fontSize: 11, fontWeight: '700', letterSpacing: 1, textTransform: 'uppercase' }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' }}>
           Step {step} of {TOTAL_STEPS}
         </Text>
       </View>
@@ -317,12 +317,13 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
             </Text>
             {schedule.map((day) => (
               <VISTACard key={day.date}>
-                <Text style={{ fontSize: 12, color: colors.gold, fontWeight: '700' }}>{day.dateLabel}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, fontWeight: '600' }}>{day.dateLabel}</Text>
                 <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy, marginBottom: 6 }}>{day.label}</Text>
                 {day.items.map((item, i) => (
-                  <Text key={i} style={{ fontSize: 13, color: colors.textSecondary, marginBottom: 2 }}>
-                    {item.icon} {item.text}
-                  </Text>
+                  <View key={i} style={{ flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
+                    <Ionicons name={item.icon} size={14} color={colors.textSecondary} style={{ marginTop: 1 }} />
+                    <Text style={{ fontSize: 13, color: colors.textSecondary, flex: 1, lineHeight: 18 }}>{item.text}</Text>
+                  </View>
                 ))}
               </VISTACard>
             ))}
@@ -365,7 +366,9 @@ function TierCard({
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
           <View style={{ flex: 1 }}>
             {badge ? (
-              <Text style={{ fontSize: 10, fontWeight: '800', color: colors.gold, marginBottom: 4 }}>{badge}</Text>
+              <View style={{ alignSelf: 'flex-start', backgroundColor: colors.navy, borderRadius: radius.tag, paddingVertical: 2, paddingHorizontal: 6, marginBottom: 6 }}>
+                <Text style={{ fontSize: 9, fontWeight: '700', color: '#FFFFFF', letterSpacing: 0.4 }}>{badge}</Text>
+              </View>
             ) : null}
             <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy }}>{title}</Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{subtitle}</Text>

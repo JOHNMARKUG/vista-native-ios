@@ -11,7 +11,7 @@ type Props = TextInputProps & {
 const VISTAInput = forwardRef<TextInput, Props>(
   ({ label, error, leftIcon, style, onFocus, onBlur, ...rest }, ref) => {
     const [focused, setFocused] = useState(false);
-    const borderColor = error ? colors.error : focused ? colors.navy : '#DEDEE3';
+    const borderColor = error ? colors.error : focused ? colors.navy : colors.border;
 
     return (
       <View style={{ gap: 6 }}>
@@ -23,7 +23,7 @@ const VISTAInput = forwardRef<TextInput, Props>(
         <View
           style={{
             height: 50,
-            borderRadius: 12,
+            borderRadius: 8,
             backgroundColor: colors.card,
             borderWidth: 1.5,
             borderColor,

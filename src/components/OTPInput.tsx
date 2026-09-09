@@ -48,8 +48,7 @@ export default function OTPInput({ value, onChange, length = 6, autoFocus = true
 
 function Box({ digit, active }: { digit: string; active: boolean }) {
   const animatedStyle = useAnimatedStyle(() => ({
-    borderColor: withTiming(digit ? colors.navy : active ? colors.navy : '#DEDEE3', { duration: 150 }),
-    transform: [{ scale: withTiming(active ? 1.04 : 1, { duration: 150 }) }],
+    borderColor: withTiming(digit ? colors.navy : active ? colors.navy : colors.border, { duration: 150 }),
   }));
 
   return (
@@ -58,7 +57,7 @@ function Box({ digit, active }: { digit: string; active: boolean }) {
         {
           width: 44,
           height: 52,
-          borderRadius: 12,
+          borderRadius: 8,
           borderWidth: 1.5,
           backgroundColor: colors.card,
           alignItems: 'center',

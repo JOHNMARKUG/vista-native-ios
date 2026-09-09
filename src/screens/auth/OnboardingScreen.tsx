@@ -27,9 +27,9 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [index, setIndex] = useState(0);
 
   const slides = [
-    { icon: 'shield-checkmark' as const, title: t('onboarding.slide1Title'), body: t('onboarding.slide1Body') },
-    { icon: 'earth' as const, title: t('onboarding.slide2Title'), body: t('onboarding.slide2Body') },
-    { icon: 'flash' as const, title: t('onboarding.slide3Title'), body: t('onboarding.slide3Body') },
+    { icon: 'car-outline' as const, title: t('onboarding.slide1Title'), body: t('onboarding.slide1Body') },
+    { icon: 'business-outline' as const, title: t('onboarding.slide2Title'), body: t('onboarding.slide2Body') },
+    { icon: 'navigate-outline' as const, title: t('onboarding.slide3Title'), body: t('onboarding.slide3Body') },
   ];
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -66,10 +66,11 @@ export default function OnboardingScreen({ navigation }: Props) {
           <View key={i} style={{ width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl }}>
             <View
               style={{
-                width: 96,
-                height: 96,
-                borderRadius: 28,
-                backgroundColor: 'rgba(200,146,42,0.16)',
+                width: 88,
+                height: 88,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.2)',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: spacing.xl,

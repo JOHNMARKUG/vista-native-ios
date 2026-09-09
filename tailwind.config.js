@@ -6,9 +6,7 @@ module.exports = {
     extend: {
       colors: {
         navy: '#1B2E6B',
-        'navy-soft': '#2C4089',
         gold: '#C8922A',
-        'gold-soft': '#F3E4C6',
         bg: '#F2F2F7',
         card: '#FFFFFF',
         ink: '#000000',
@@ -25,9 +23,9 @@ module.exports = {
         xxl: '48px',
       },
       borderRadius: {
-        card: '16px',
-        control: '12px',
-        pill: '999px',
+        card: '8px',
+        control: '8px',
+        tag: '4px',
       },
       fontSize: {
         display: ['34px', { lineHeight: '38px', fontWeight: '700' }],

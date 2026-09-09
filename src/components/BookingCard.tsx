@@ -36,16 +36,18 @@ export default function BookingCard({
         {
           backgroundColor: colors.card,
           borderRadius: radius.card,
+          borderWidth: 1,
+          borderColor: colors.border,
           padding: 16,
           gap: 10,
           opacity: pressed ? 0.9 : 1,
         },
-        shadows.subtle,
+        shadows.card,
       ]}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
         <View>
-          <Text style={{ fontSize: 12, fontWeight: '700', color: colors.gold, marginBottom: 2 }}>
+          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 }}>
             {reference}
           </Text>
           <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{title}</Text>
@@ -81,14 +83,15 @@ export default function BookingCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 5,
-                backgroundColor: '#E7ECFB',
-                borderRadius: 20,
+                borderWidth: 1,
+                borderColor: colors.navy,
+                borderRadius: radius.tag,
                 paddingVertical: 3,
-                paddingHorizontal: 10,
+                paddingHorizontal: 8,
               }}
             >
-              <Ionicons name="car" size={12} color="#2563EB" />
-              <Text style={{ fontSize: 11, fontWeight: '700', color: '#2563EB' }}>Driver Assigned</Text>
+              <Ionicons name="car" size={12} color={colors.navy} />
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>Driver Assigned</Text>
             </View>
           ) : (
             <View />

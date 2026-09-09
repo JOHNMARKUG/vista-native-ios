@@ -39,7 +39,7 @@ export default function ProfileScreen({ navigation }: Props) {
   const handleShareReferral = () => {
     if (!profile?.referral_code) return;
     const msg = encodeURIComponent(
-      `I use VISTA Transport for my rides in Uganda! 🚗\n\nDownload the app and use my code *${profile.referral_code}* to get UGX 10,000 off your first booking!`
+      `I use VISTA Transport for my rides in Uganda.\n\nDownload the app and use my code *${profile.referral_code}* to get UGX 10,000 off your first booking!`
     );
     Linking.openURL(`https://wa.me/?text=${msg}`);
   };

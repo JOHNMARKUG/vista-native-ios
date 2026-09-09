@@ -92,7 +92,7 @@ export default function TrackingScreen({ route, navigation }: Props) {
         <View style={{ width: 50 }} />
       </View>
 
-      <View style={{ flex: 1, margin: spacing.md, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ flex: 1, margin: spacing.md, borderRadius: 8, overflow: 'hidden' }}>
         <MapView
           style={{ flex: 1 }}
           initialRegion={{
@@ -125,7 +125,7 @@ export default function TrackingScreen({ route, navigation }: Props) {
 
       <View style={{ padding: spacing.md }}>
         {hasDriverLocation ? (
-          <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={{ backgroundColor: colors.card, borderRadius: 8, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
             <Ionicons name="car" size={26} color={colors.navy} />
             <View>
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>Your driver is on the way</Text>
@@ -135,7 +135,7 @@ export default function TrackingScreen({ route, navigation }: Props) {
             </View>
           </View>
         ) : (
-          <View style={{ backgroundColor: colors.card, borderRadius: 14, padding: 16 }}>
+          <View style={{ backgroundColor: colors.card, borderRadius: 8, padding: 16 }}>
             <Text style={{ fontSize: 13, color: colors.textSecondary }}>
               Waiting for your driver's live location to come online.
             </Text>

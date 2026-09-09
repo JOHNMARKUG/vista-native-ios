@@ -9,7 +9,7 @@ import { supabase } from '../../lib/supabase';
 import BookingCard from '../../components/BookingCard';
 import VISTAButton from '../../components/VISTAButton';
 import type { BookingStatus } from '../../components/StatusBadge';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'Trips'>;
 
@@ -149,12 +149,14 @@ export default function TripsScreen({ navigation }: Props) {
             onPress={() => setFilter(f.key)}
             style={{
               fontSize: 12,
-              fontWeight: '700',
+              fontWeight: '600',
               color: filter === f.key ? '#FFFFFF' : colors.textSecondary,
-              backgroundColor: filter === f.key ? colors.gold : colors.card,
-              borderRadius: 20,
+              backgroundColor: filter === f.key ? colors.navy : colors.card,
+              borderWidth: 1,
+              borderColor: filter === f.key ? colors.navy : colors.border,
+              borderRadius: radius.tag,
               paddingVertical: 8,
-              paddingHorizontal: 16,
+              paddingHorizontal: 14,
               overflow: 'hidden',
             }}
           >

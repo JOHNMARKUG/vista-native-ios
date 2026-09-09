@@ -12,6 +12,7 @@
       "bundleIdentifier": "ug.vista.transport",
       "buildNumber": "1",
       "supportsTablet": false,
+      "usesAppleSignIn": true,
       "config": {
         "googleMapsApiKey": "$(EXPO_PUBLIC_GOOGLE_MAPS_KEY)"
       },
@@ -76,7 +77,9 @@
           "color": "#1B2E6B"
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-apple-authentication",
+      "@react-native-google-signin/google-signin"
     ],
     "extra": {
       "eas": {

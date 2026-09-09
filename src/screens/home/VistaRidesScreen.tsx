@@ -3,7 +3,7 @@ import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/types';
@@ -19,18 +19,25 @@ type Props = NativeStackScreenProps<HomeStackParamList, 'VistaRides'>;
 type VehicleKey = 'boda' | 'standard' | 'premium' | 'intercity';
 type Coords = { lat: number; lng: number };
 
-const VEHICLES: { key: VehicleKey; emoji: string; label: string; sub: string; maxPax: number }[] = [
-  { key: 'boda', emoji: '🏍️', label: 'Boda Boda', sub: 'Fast motorcycle taxi', maxPax: 1 },
-  { key: 'standard', emoji: '🚗', label: 'Car — Standard', sub: '1–4 passengers', maxPax: 4 },
-  { key: 'premium', emoji: '🚙', label: 'Car — Premium', sub: 'SUV or Executive', maxPax: 6 },
-  { key: 'intercity', emoji: '🛣️', label: 'Intercity', sub: 'Any Uganda city', maxPax: 4 },
+const VEHICLES: {
+  key: VehicleKey;
+  iconFamily: 'ionicons' | 'mci';
+  icon: string;
+  label: string;
+  sub: string;
+  maxPax: number;
+}[] = [
+  { key: 'boda', iconFamily: 'mci', icon: 'motorbike', label: 'Boda Boda', sub: 'Fast motorcycle taxi', maxPax: 1 },
+  { key: 'standard', iconFamily: 'ionicons', icon: 'car-outline', label: 'Car — Standard', sub: '1–4 passengers', maxPax: 4 },
+  { key: 'premium', iconFamily: 'ionicons', icon: 'car-sport-outline', label: 'Car — Premium', sub: 'SUV or Executive', maxPax: 6 },
+  { key: 'intercity', iconFamily: 'ionicons', icon: 'trail-sign-outline', label: 'Intercity', sub: 'Any Uganda city', maxPax: 4 },
 ];
 
 const PAYMENT_METHODS = [
-  { key: 'mtn', label: 'MTN Mobile Money', icon: '📱' },
-  { key: 'airtel', label: 'Airtel Money', icon: '📲' },
-  { key: 'card', label: 'Visa / Mastercard', icon: '💳' },
-  { key: 'cash', label: 'Cash to Driver', icon: '💵' },
+  { key: 'mtn', label: 'MTN Mobile Money', icon: 'phone-portrait-outline' },
+  { key: 'airtel', label: 'Airtel Money', icon: 'phone-portrait-outline' },
+  { key: 'card', label: 'Visa / Mastercard', icon: 'card-outline' },
+  { key: 'cash', label: 'Cash to Driver', icon: 'cash-outline' },
 ] as const;
 
 function haversineKm(a: Coords, b: Coords) {
@@ -206,7 +213,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
         <View style={{ width: 50 }} />
       </View>
 
-      <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: 16, overflow: 'hidden' }}>
+      <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: 8, overflow: 'hidden' }}>
         <MapView
           style={{ flex: 1 }}
           initialRegion={{
@@ -255,7 +262,13 @@ export default function VistaRidesScreen({ navigation }: Props) {
           <Pressable key={v.key} onPress={() => setVehicle(v.key)}>
             <VISTACard style={vehicle === v.key ? { borderWidth: 2, borderColor: colors.navy } : undefined}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <Text style={{ fontSize: 26 }}>{v.emoji}</Text>
+                <View style={{ width: 36, alignItems: 'center' }}>
+                  {v.iconFamily === 'mci' ? (
+                    <MaterialCommunityIcons name={v.icon as any} size={26} color={colors.navy} />
+                  ) : (
+                    <Ionicons name={v.icon as any} size={26} color={colors.navy} />
+                  )}
+                </View>
                 <View style={{ flex: 1 }}>
                   <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{v.label}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary }}>{v.sub}</Text>
@@ -298,7 +311,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
         </VISTACard>
       </ScrollView>
 
-      <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: '#E3E3E8' }}>
+      <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
         <VISTAButton
           title={submitting ? 'Requesting...' : `Request Ride — UGX ${totalUgx.toLocaleString()}`}
           variant="accent"
@@ -325,7 +338,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
             >
-              <Text style={{ fontSize: 20 }}>{m.icon}</Text>
+              <Ionicons name={m.icon} size={20} color={colors.navy} />
               <Text style={{ fontSize: 15, color: colors.textPrimary, flex: 1 }}>{m.label}</Text>
               {payMethod === m.key ? <Ionicons name="checkmark" size={18} color={colors.navy} /> : null}
             </Pressable>

@@ -15,10 +15,10 @@ import VISTACardComp from '../../components/VISTACard';
 import { colors, spacing } from '../../lib/theme';
 
 const PAYMENT_METHODS = [
-  { key: 'mtn', label: 'MTN Mobile Money', icon: '📱' },
-  { key: 'airtel', label: 'Airtel Money', icon: '📲' },
-  { key: 'card', label: 'Visa / Mastercard', icon: '💳' },
-  { key: 'cash', label: 'Cash to Driver', icon: '💵' },
+  { key: 'mtn', label: 'MTN Mobile Money', icon: 'phone-portrait-outline' },
+  { key: 'airtel', label: 'Airtel Money', icon: 'phone-portrait-outline' },
+  { key: 'card', label: 'Visa / Mastercard', icon: 'card-outline' },
+  { key: 'cash', label: 'Cash to Driver', icon: 'cash-outline' },
 ] as const;
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'AirportTransfer'>;
@@ -245,7 +245,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
         </VISTACardComp>
       </ScrollView>
 
-      <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: '#E3E3E8' }}>
+      <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
         <VISTAButton
           title={submitting ? 'Booking...' : `Confirm — USD ${pricing.totalAmount}`}
           variant="accent"
@@ -270,7 +270,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
             >
-              <Text style={{ fontSize: 20 }}>{m.icon}</Text>
+              <Ionicons name={m.icon} size={20} color={colors.navy} />
               <Text style={{ fontSize: 15, color: colors.textPrimary, flex: 1 }}>{m.label}</Text>
               {payMethod === m.key ? <Ionicons name="checkmark" size={18} color={colors.navy} /> : null}
             </Pressable>
@@ -288,7 +288,9 @@ function DirectionTab({ label, active, onPress }: { label: string; active: boole
       style={{
         flex: 1,
         paddingVertical: 10,
-        borderRadius: 12,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: active ? colors.navy : colors.border,
         alignItems: 'center',
         backgroundColor: active ? colors.navy : colors.card,
       }}

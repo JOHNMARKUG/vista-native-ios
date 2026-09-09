@@ -1,5 +1,6 @@
 import React from 'react';
 import { Text, View } from 'react-native';
+import { colors, radius } from '../lib/theme';
 
 export type BookingStatus =
   | 'pending'
@@ -15,19 +16,22 @@ export type BookingStatus =
   | 'searching'
   | 'pending_payment';
 
-const CONFIG: Record<BookingStatus, { bg: string; fg: string; label: string }> = {
-  pending: { bg: '#FFF3D6', fg: '#8A6413', label: 'Pending' },
-  pending_payment: { bg: '#FFF3D6', fg: '#8A6413', label: 'Payment Pending' },
-  searching: { bg: '#FFF3D6', fg: '#8A6413', label: 'Finding Driver' },
-  scheduled: { bg: '#E7ECFB', fg: '#1B2E6B', label: 'Scheduled' },
-  confirmed: { bg: '#E7ECFB', fg: '#1B2E6B', label: 'Confirmed' },
-  driver_assigned: { bg: '#E7ECFB', fg: '#2563EB', label: 'Driver Assigned' },
-  en_route: { bg: '#EFE7FB', fg: '#7C3AED', label: 'On The Way' },
-  driver_arrived: { bg: '#FFF3D6', fg: '#8A6413', label: 'Driver Arrived' },
-  arrived: { bg: '#FFF3D6', fg: '#8A6413', label: 'Driver Arrived' },
-  in_progress: { bg: '#E7ECFB', fg: '#1B2E6B', label: 'In Progress' },
-  completed: { bg: '#DFF6E4', fg: '#1E8E3E', label: 'Completed' },
-  cancelled: { bg: '#FDE3E1', fg: '#B42318', label: 'Cancelled' },
+// Restricted to navy / gold / success / error / neutral — no secondary
+// accent hues. Waiting states read gold, active states read navy,
+// terminal states read success or error.
+const CONFIG: Record<BookingStatus, { fg: string; label: string }> = {
+  pending: { fg: colors.gold, label: 'Pending' },
+  pending_payment: { fg: colors.gold, label: 'Payment Pending' },
+  searching: { fg: colors.gold, label: 'Finding Driver' },
+  scheduled: { fg: colors.navy, label: 'Scheduled' },
+  confirmed: { fg: colors.navy, label: 'Confirmed' },
+  driver_assigned: { fg: colors.navy, label: 'Driver Assigned' },
+  en_route: { fg: colors.navy, label: 'On The Way' },
+  driver_arrived: { fg: colors.gold, label: 'Driver Arrived' },
+  arrived: { fg: colors.gold, label: 'Driver Arrived' },
+  in_progress: { fg: colors.navy, label: 'In Progress' },
+  completed: { fg: colors.success, label: 'Completed' },
+  cancelled: { fg: colors.error, label: 'Cancelled' },
 };
 
 export default function StatusBadge({ status, label }: { status: BookingStatus; label?: string }) {
@@ -37,16 +41,17 @@ export default function StatusBadge({ status, label }: { status: BookingStatus; 
       style={{
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 5,
+        gap: 6,
         alignSelf: 'flex-start',
-        backgroundColor: cfg.bg,
-        borderRadius: 20,
-        paddingVertical: 4,
-        paddingHorizontal: 10,
+        borderWidth: 1,
+        borderColor: cfg.fg,
+        borderRadius: radius.tag,
+        paddingVertical: 3,
+        paddingHorizontal: 8,
       }}
     >
-      <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: cfg.fg }} />
-      <Text style={{ fontSize: 11, fontWeight: '700', color: cfg.fg }}>{label ?? cfg.label}</Text>
+      <View style={{ width: 5, height: 5, borderRadius: 2.5, backgroundColor: cfg.fg }} />
+      <Text style={{ fontSize: 11, fontWeight: '600', color: cfg.fg }}>{label ?? cfg.label}</Text>
     </View>
   );
 }

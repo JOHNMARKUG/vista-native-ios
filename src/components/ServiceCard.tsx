@@ -24,30 +24,31 @@ export default function ServiceCard({ icon, label, sublabel, badge, accent, onPr
         {
           flex: 1,
           backgroundColor: colors.card,
-          borderRadius: radius.card - 2,
+          borderRadius: radius.card,
+          borderWidth: 1,
+          borderColor: colors.border,
           paddingVertical: 14,
           paddingHorizontal: 8,
           alignItems: 'center',
           gap: 8,
           opacity: pressed ? 0.85 : 1,
         },
-        shadows.subtle,
+        shadows.card,
       ]}
     >
       {badge ? (
         <View
           style={{
             position: 'absolute',
-            top: 0,
-            right: 0,
+            top: 8,
+            right: 8,
             backgroundColor: accent ? colors.gold : colors.navy,
-            borderRadius: 8,
-            borderTopRightRadius: 14,
+            borderRadius: radius.tag,
             paddingVertical: 3,
-            paddingHorizontal: 7,
+            paddingHorizontal: 6,
           }}
         >
-          <Text style={{ fontSize: 8, fontWeight: '800', color: accent ? colors.navy : '#FFFFFF', letterSpacing: 0.4 }}>
+          <Text style={{ fontSize: 8, fontWeight: '700', color: accent ? colors.navy : '#FFFFFF', letterSpacing: 0.4 }}>
             {badge}
           </Text>
         </View>
@@ -56,7 +57,7 @@ export default function ServiceCard({ icon, label, sublabel, badge, accent, onPr
         style={{
           width: 44,
           height: 44,
-          borderRadius: 12,
+          borderRadius: radius.control,
           backgroundColor: accent ? colors.gold : colors.navy,
           alignItems: 'center',
           justifyContent: 'center',

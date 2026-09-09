@@ -6,6 +6,13 @@ import React, {
   useRef,
   useState,
 } from 'react';
+import * as AppleAuthentication from 'expo-apple-authentication';
+import {
+  GoogleSignin,
+  isErrorWithCode,
+  isSuccessResponse,
+  statusCodes,
+} from '@react-native-google-signin/google-signin';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -33,11 +40,48 @@ type AuthContextValue = {
   exitGuestMode: () => void;
   sendOtp: (email: string) => Promise<{ error: string | null }>;
   verifyOtp: (email: string, token: string) => Promise<{ error: string | null; user: User | null }>;
+  signInWithApple: () => Promise<{ error: string | null; cancelled?: boolean }>;
+  signInWithGoogle: () => Promise<{ error: string | null; cancelled?: boolean }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
+
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+const GOOGLE_IOS_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+
+if (GOOGLE_WEB_CLIENT_ID) {
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+  });
+}
+
+/**
+ * Seeds a profile row for a brand-new user, or quietly touches only the
+ * fields passed in for a returning one. Never resets `profile_complete`
+ * on an existing row — a prior version of this (ported from the web app)
+ * upserted `profile_complete: false` unconditionally, which meant every
+ * returning login sent the user back through profile setup.
+ */
+async function ensureProfile(userId: string, email: string | null, seedName?: string | null) {
+  const { data: existing } = await supabase.from('profiles').select('id').eq('id', userId).maybeSingle();
+
+  if (existing) {
+    if (email) await supabase.from('profiles').update({ email }).eq('id', userId);
+    return;
+  }
+
+  await supabase.from('profiles').insert({
+    id: userId,
+    email,
+    full_name: seedName ?? null,
+    role: 'customer',
+    preferred_language: 'English',
+    profile_complete: false,
+  });
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -100,25 +144,86 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (error) return { error: error.message, user: null };
 
     if (data.user) {
-      // Seed a minimal profile row so CompleteProfileScreen only needs an UPDATE.
-      await supabase.from('profiles').upsert(
-        {
-          id: data.user.id,
-          email: email.trim().toLowerCase(),
-          role: 'customer',
-          preferred_language: 'English',
-          profile_complete: false,
-        },
-        { onConflict: 'id' }
-      );
+      await ensureProfile(data.user.id, email.trim().toLowerCase());
       await fetchProfile(data.user.id);
     }
     return { error: null, user: data.user };
   }, [fetchProfile]);
 
+  const signInWithApple = useCallback(async () => {
+    try {
+      const credential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+      });
+      if (!credential.identityToken) {
+        return { error: 'Apple did not return a sign-in token. Please try again.' };
+      }
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'apple',
+        token: credential.identityToken,
+      });
+      if (error) return { error: error.message };
+
+      if (data.user) {
+        // Apple only shares the name on the very first authorization ever —
+        // it's null on every sign-in after that.
+        const seedName = credential.fullName
+          ? [credential.fullName.givenName, credential.fullName.familyName].filter(Boolean).join(' ')
+          : null;
+        await ensureProfile(data.user.id, data.user.email ?? credential.email ?? null, seedName || undefined);
+        await fetchProfile(data.user.id);
+      }
+      return { error: null };
+    } catch (err: any) {
+      if (err?.code === 'ERR_REQUEST_CANCELED') return { error: null, cancelled: true };
+      return { error: err?.message ?? 'Apple sign-in failed. Please try again.' };
+    }
+  }, [fetchProfile]);
+
+  const signInWithGoogle = useCallback(async () => {
+    if (!GOOGLE_WEB_CLIENT_ID) {
+      return { error: 'Google sign-in is not configured for this build yet.' };
+    }
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response) || !response.data.idToken) {
+        return { error: 'Google did not return a sign-in token. Please try again.' };
+      }
+
+      const { data, error } = await supabase.auth.signInWithIdToken({
+        provider: 'google',
+        token: response.data.idToken,
+      });
+      if (error) return { error: error.message };
+
+      if (data.user) {
+        await ensureProfile(data.user.id, data.user.email ?? response.data.user.email, response.data.user.name);
+        await fetchProfile(data.user.id);
+      }
+      return { error: null };
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
+        return { error: null, cancelled: true };
+      }
+      return { error: (err as Error)?.message ?? 'Google sign-in failed. Please try again.' };
+    }
+  }, [fetchProfile]);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    try {
+      if (GOOGLE_WEB_CLIENT_ID && (await GoogleSignin.getCurrentUser())) {
+        await GoogleSignin.signOut();
+      }
+    } catch {
+      // Not signed in via Google — nothing to clean up.
+    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -137,6 +242,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         exitGuestMode,
         sendOtp,
         verifyOtp,
+        signInWithApple,
+        signInWithGoogle,
         signOut,
         refreshProfile,
       }}

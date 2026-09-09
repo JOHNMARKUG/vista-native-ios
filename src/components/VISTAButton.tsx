@@ -9,7 +9,7 @@ import {
 import * as Haptics from 'expo-haptics';
 import { colors } from '../lib/theme';
 
-type Variant = 'primary' | 'accent' | 'outline' | 'ghost';
+type Variant = 'primary' | 'accent' | 'outline' | 'outlineLight' | 'ghost';
 
 type Props = Omit<PressableProps, 'style'> & {
   title: string;
@@ -26,6 +26,9 @@ const VARIANT_STYLE: Record<Variant, { bg: string; text: string; border?: string
   // 4.5:1 floor. Navy text on gold reaches 4.61:1.
   accent: { bg: colors.gold, text: colors.navy },
   outline: { bg: 'transparent', text: colors.navy, border: colors.navy },
+  // For use on a navy/dark surface (e.g. the driver card) — plain `outline`
+  // would render a navy border and navy text, invisible against navy.
+  outlineLight: { bg: 'transparent', text: '#FFFFFF', border: 'rgba(255,255,255,0.4)' },
   ghost: { bg: 'transparent', text: colors.navy },
 };
 
@@ -58,7 +61,7 @@ export default function VISTAButton({
       style={({ pressed }) => [
         {
           height: 50,
-          borderRadius: 14,
+          borderRadius: 8,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
@@ -73,7 +76,7 @@ export default function VISTAButton({
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#FFFFFF' : colors.navy} />
+        <ActivityIndicator color={style.text} />
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
           {icon}

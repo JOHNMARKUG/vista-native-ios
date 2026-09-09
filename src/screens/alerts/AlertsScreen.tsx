@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import VISTAButton from '../../components/VISTAButton';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 type Notification = {
   id: string;
@@ -26,9 +26,9 @@ type ChurchEvent = {
 };
 
 const ICON_CONFIG: Record<string, { icon: keyof typeof Ionicons.glyphMap; color: string; bg: string }> = {
-  booking_confirmed: { icon: 'checkmark-circle', color: '#1A6B3C', bg: 'rgba(26,107,60,0.1)' },
-  driver_assigned: { icon: 'car', color: '#2563EB', bg: 'rgba(37,99,235,0.1)' },
-  booking_cancelled: { icon: 'information-circle', color: '#DC2626', bg: 'rgba(220,38,38,0.1)' },
+  booking_confirmed: { icon: 'checkmark-circle', color: colors.success, bg: 'rgba(52,199,89,0.1)' },
+  driver_assigned: { icon: 'car', color: colors.navy, bg: 'rgba(27,46,107,0.08)' },
+  booking_cancelled: { icon: 'information-circle', color: colors.error, bg: 'rgba(255,59,48,0.1)' },
   event: { icon: 'calendar', color: colors.gold, bg: 'rgba(200,146,42,0.1)' },
 };
 const DEFAULT_ICON = { icon: 'notifications' as const, color: colors.navy, bg: 'rgba(27,46,107,0.1)' };
@@ -108,8 +108,8 @@ export default function AlertsScreen() {
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
           <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Alerts</Text>
           {unreadCount > 0 && (
-            <Pressable onPress={markAllRead} style={{ backgroundColor: 'rgba(200,146,42,0.2)', borderRadius: 20, paddingVertical: 6, paddingHorizontal: 14 }}>
-              <Text style={{ fontSize: 11, fontWeight: '700', color: colors.gold }}>Mark all read</Text>
+            <Pressable onPress={markAllRead} style={{ backgroundColor: colors.gold, borderRadius: radius.tag, paddingVertical: 6, paddingHorizontal: 12 }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>Mark all read</Text>
             </Pressable>
           )}
         </View>
@@ -120,15 +120,15 @@ export default function AlertsScreen() {
 
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl }}>
         {events.length > 0 && (
-          <View style={{ backgroundColor: colors.navy, borderRadius: 16, padding: 16, marginBottom: spacing.sm }}>
+          <View style={{ backgroundColor: colors.navy, borderRadius: 8, padding: 16, marginBottom: spacing.sm }}>
             <Text style={{ fontSize: 13, fontWeight: '800', color: '#FFFFFF', marginBottom: 12 }}>Upcoming Events</Text>
             {events.map((event) => {
               const date = new Date(event.event_date);
               return (
-                <View key={event.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 12, padding: 12, marginBottom: 8 }}>
-                  <View style={{ backgroundColor: colors.gold, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 10, alignItems: 'center' }}>
-                    <Text style={{ fontSize: 16, fontWeight: '900', color: '#FFFFFF' }}>{date.getDate()}</Text>
-                    <Text style={{ fontSize: 9, color: 'rgba(255,255,255,0.8)', fontWeight: '600' }}>
+                <View key={event.id} style={{ flexDirection: 'row', gap: 12, alignItems: 'center', backgroundColor: 'rgba(255,255,255,0.06)', borderRadius: 8, padding: 12, marginBottom: 8 }}>
+                  <View style={{ backgroundColor: colors.gold, borderRadius: radius.tag, paddingVertical: 6, paddingHorizontal: 10, alignItems: 'center' }}>
+                    <Text style={{ fontSize: 16, fontWeight: '800', color: colors.navy }}>{date.getDate()}</Text>
+                    <Text style={{ fontSize: 9, color: colors.navy, fontWeight: '600' }}>
                       {date.toLocaleDateString('en', { month: 'short' })}
                     </Text>
                   </View>
@@ -169,11 +169,11 @@ export default function AlertsScreen() {
                   flexDirection: 'row',
                   gap: 12,
                   backgroundColor: notif.is_read ? colors.card : 'rgba(27,46,107,0.04)',
-                  borderRadius: 16,
+                  borderRadius: 8,
                   padding: 14,
                 }}
               >
-                <View style={{ width: 44, height: 44, borderRadius: 12, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 44, height: 44, borderRadius: radius.control, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name={cfg.icon} size={22} color={cfg.color} />
                 </View>
                 <View style={{ flex: 1 }}>
