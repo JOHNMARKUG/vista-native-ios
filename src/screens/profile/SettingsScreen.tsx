@@ -103,5 +103,5 @@ function Row({
 }
 
 function Divider() {
-  return <View style={{ height: 1, backgroundColor: colors.background, marginLeft: spacing.md + 32 }} />;
+  return <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing.md + 32 }} />;
 }

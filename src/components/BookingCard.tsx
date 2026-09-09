@@ -5,6 +5,7 @@ import { colors, radius, shadows } from '../lib/theme';
 import StatusBadge, { type BookingStatus } from './StatusBadge';
 
 type Props = {
+  icon?: keyof typeof Ionicons.glyphMap;
   reference: string;
   title: string;
   pickup: string;
@@ -18,6 +19,7 @@ type Props = {
 };
 
 export default function BookingCard({
+  icon = 'car-outline',
   reference,
   title,
   pickup,
@@ -46,11 +48,25 @@ export default function BookingCard({
       ]}
     >
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-        <View>
-          <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 }}>
-            {reference}
-          </Text>
-          <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{title}</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1, paddingRight: 8 }}>
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: radius.input,
+              backgroundColor: colors.navy,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name={icon} size={18} color="#FFFFFF" />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary, marginBottom: 2 }}>
+              {reference}
+            </Text>
+            <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{title}</Text>
+          </View>
         </View>
         <StatusBadge status={status} />
       </View>
@@ -73,7 +89,7 @@ export default function BookingCard({
             justifyContent: 'space-between',
             alignItems: 'center',
             borderTopWidth: 1,
-            borderTopColor: colors.background,
+            borderTopColor: colors.border,
             paddingTop: 8,
           }}
         >

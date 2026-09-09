@@ -238,7 +238,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
             <Text style={{ fontSize: 13, color: colors.textSecondary }}>Platform fee</Text>
             <Text style={{ fontSize: 13, color: colors.textPrimary }}>USD {pricing.platformFee}</Text>
           </View>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.background, marginTop: 4, paddingTop: 6 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4, paddingTop: 6 }}>
             <Text style={{ fontWeight: '700', color: colors.navy }}>Total</Text>
             <Text style={{ fontWeight: '800', fontSize: 18, color: colors.navy }}>USD {pricing.totalAmount}</Text>
           </View>

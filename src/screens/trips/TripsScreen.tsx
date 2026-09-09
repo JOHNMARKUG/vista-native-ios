@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TripsStackParamList } from '../../navigation/types';
@@ -24,6 +25,7 @@ type Booking = {
   status: BookingStatus;
   driver_id: string | null;
   amount_usd: number;
+  created_at: string;
 };
 
 type VistaRide = {
@@ -37,6 +39,10 @@ type VistaRide = {
   driver_id: string | null;
   created_at: string;
 };
+
+type Trip =
+  | { source: 'booking'; data: Booking }
+  | { source: 'ride'; data: VistaRide };
 
 const SERVICE_LABELS: Record<string, string> = {
   airport_pickup: 'Airport Pickup',
@@ -58,20 +64,50 @@ const RIDE_LABELS: Record<string, string> = {
   hourly_premium: 'Hourly Hire — Premium',
 };
 
-const FILTERS: { key: string; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'scheduled', label: 'Scheduled' },
-  { key: 'pending', label: 'Pending' },
-  { key: 'driver_assigned', label: 'Assigned' },
-  { key: 'completed', label: 'Completed' },
-  { key: 'cancelled', label: 'Cancelled' },
+const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  airport_pickup: 'airplane-outline',
+  airport_departure: 'airplane-outline',
+  ministry_transport: 'business-outline',
+  group_convoy: 'people-outline',
+  city_transfer: 'car-outline',
+  vip: 'star-outline',
+  crusade: 'business-outline',
+  conference: 'business-outline',
+};
+
+const RIDE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
+  boda: 'bicycle-outline',
+  standard: 'car-outline',
+  premium: 'car-sport-outline',
+  intercity: 'trail-sign-outline',
+  hourly_standard: 'time-outline',
+  hourly_premium: 'time-outline',
+};
+
+const ACTIVE_STATUSES: BookingStatus[] = [
+  'pending',
+  'pending_payment',
+  'searching',
+  'scheduled',
+  'confirmed',
+  'driver_assigned',
+  'en_route',
+  'driver_arrived',
+  'arrived',
+  'in_progress',
 ];
+
+const TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'active', label: 'Active' },
+  { key: 'completed', label: 'Completed' },
+] as const;
 
 export default function TripsScreen({ navigation }: Props) {
   const { user, isGuest, exitGuestMode } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rides, setRides] = useState<VistaRide[]>([]);
-  const [filter, setFilter] = useState('all');
+  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -80,11 +116,8 @@ export default function TripsScreen({ navigation }: Props) {
       setLoading(false);
       return;
     }
-    let bookingsQuery = supabase.from('bookings').select('*').eq('customer_id', user.id).order('created_at', { ascending: false });
-    if (filter !== 'all') bookingsQuery = bookingsQuery.eq('status', filter);
-
     const [{ data: bookingsData }, { data: ridesData }] = await Promise.all([
-      bookingsQuery,
+      supabase.from('bookings').select('*').eq('customer_id', user.id).order('created_at', { ascending: false }),
       supabase
         .from('vista_rides')
         .select('id, booking_ref, status, pickup_address, dropoff_address, ride_type, total_ugx, driver_id, created_at')
@@ -95,7 +128,7 @@ export default function TripsScreen({ navigation }: Props) {
     setBookings((bookingsData as Booking[]) ?? []);
     setRides((ridesData as VistaRide[]) ?? []);
     setLoading(false);
-  }, [user, filter]);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -121,9 +154,20 @@ export default function TripsScreen({ navigation }: Props) {
     setRefreshing(false);
   };
 
+  const trips = useMemo<Trip[]>(() => {
+    const merged: Trip[] = [
+      ...rides.map((data): Trip => ({ source: 'ride', data })),
+      ...bookings.map((data): Trip => ({ source: 'booking', data })),
+    ];
+    merged.sort((a, b) => new Date(b.data.created_at).getTime() - new Date(a.data.created_at).getTime());
+    if (tab === 'all') return merged;
+    if (tab === 'completed') return merged.filter((t) => t.data.status === 'completed');
+    return merged.filter((t) => ACTIVE_STATUSES.includes(t.data.status));
+  }, [bookings, rides, tab]);
+
   if (isGuest && !user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
         <Header count={0} />
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
           <Text style={{ fontSize: 16, fontWeight: '600', color: colors.navy }}>Sign in to view your trips</Text>
@@ -139,45 +183,48 @@ export default function TripsScreen({ navigation }: Props) {
   const arrivedBooking = bookings.find((b) => b.status === 'driver_arrived');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
       <Header count={bookings.length + rides.length} />
 
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: spacing.md, gap: 8, paddingVertical: spacing.sm }}>
-        {FILTERS.map((f) => (
+      <View style={{ flexDirection: 'row', paddingHorizontal: spacing.md, gap: 8, paddingVertical: spacing.sm }}>
+        {TABS.map((t) => (
           <Text
-            key={f.key}
-            onPress={() => setFilter(f.key)}
+            key={t.key}
+            onPress={() => setTab(t.key)}
             style={{
-              fontSize: 12,
+              fontSize: 13,
               fontWeight: '600',
-              color: filter === f.key ? '#FFFFFF' : colors.textSecondary,
-              backgroundColor: filter === f.key ? colors.navy : colors.card,
+              color: tab === t.key ? '#FFFFFF' : colors.textSecondary,
+              backgroundColor: tab === t.key ? colors.navy : colors.card,
               borderWidth: 1,
-              borderColor: filter === f.key ? colors.navy : colors.border,
+              borderColor: tab === t.key ? colors.navy : colors.border,
               borderRadius: radius.tag,
               paddingVertical: 8,
-              paddingHorizontal: 14,
+              paddingHorizontal: 18,
               overflow: 'hidden',
+              textAlign: 'center',
             }}
           >
-            {f.label}
+            {t.label}
           </Text>
         ))}
-      </ScrollView>
+      </View>
 
       {arrivedBooking && (
-        <VISTAButton
-          title="Your driver has arrived — tap to view"
-          variant="primary"
-          onPress={() => navigation.navigate('TripDetail', { id: arrivedBooking.id, source: 'booking' })}
-        />
+        <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
+          <VISTAButton
+            title="Your driver has arrived — tap to view"
+            variant="primary"
+            onPress={() => navigation.navigate('TripDetail', { id: arrivedBooking.id, source: 'booking' })}
+          />
+        </View>
       )}
 
       <ScrollView
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
       >
-        {loading ? null : bookings.length === 0 && rides.length === 0 ? (
+        {loading ? null : trips.length === 0 ? (
           <View style={{ alignItems: 'center', padding: spacing.xxl, gap: spacing.md }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>No trips yet</Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
@@ -185,36 +232,37 @@ export default function TripsScreen({ navigation }: Props) {
             </Text>
           </View>
         ) : (
-          <>
-            {rides.map((r) => (
+          trips.map((trip) =>
+            trip.source === 'ride' ? (
               <BookingCard
-                key={r.id}
-                reference={r.booking_ref}
-                title={RIDE_LABELS[r.ride_type] ?? 'VISTA Ride'}
-                pickup={r.pickup_address}
-                dropoff={r.dropoff_address}
-                status={r.status}
-                priceLabel={`UGX ${r.total_ugx?.toLocaleString()}`}
-                driverAssigned={!!r.driver_id}
-                onPress={() => navigation.navigate('TripDetail', { id: r.id, source: 'ride' })}
+                key={trip.data.id}
+                icon={RIDE_ICONS[trip.data.ride_type] ?? 'car-outline'}
+                reference={trip.data.booking_ref}
+                title={RIDE_LABELS[trip.data.ride_type] ?? 'VISTA Ride'}
+                pickup={trip.data.pickup_address}
+                dropoff={trip.data.dropoff_address}
+                status={trip.data.status}
+                priceLabel={`UGX ${trip.data.total_ugx?.toLocaleString()}`}
+                driverAssigned={!!trip.data.driver_id}
+                onPress={() => navigation.navigate('TripDetail', { id: trip.data.id, source: 'ride' })}
               />
-            ))}
-            {bookings.map((b) => (
+            ) : (
               <BookingCard
-                key={b.id}
-                reference={b.booking_ref}
-                title={SERVICE_LABELS[b.service_type] ?? b.service_type}
-                pickup={b.pickup_location}
-                dropoff={b.dropoff_location}
-                date={b.pickup_date}
-                time={b.pickup_time}
-                status={b.status}
-                priceLabel={`USD ${b.amount_usd}`}
-                driverAssigned={!!b.driver_id}
-                onPress={() => navigation.navigate('TripDetail', { id: b.id, source: 'booking' })}
+                key={trip.data.id}
+                icon={SERVICE_ICONS[trip.data.service_type] ?? 'car-outline'}
+                reference={trip.data.booking_ref}
+                title={SERVICE_LABELS[trip.data.service_type] ?? trip.data.service_type}
+                pickup={trip.data.pickup_location}
+                dropoff={trip.data.dropoff_location}
+                date={trip.data.pickup_date}
+                time={trip.data.pickup_time}
+                status={trip.data.status}
+                priceLabel={`USD ${trip.data.amount_usd}`}
+                driverAssigned={!!trip.data.driver_id}
+                onPress={() => navigation.navigate('TripDetail', { id: trip.data.id, source: 'booking' })}
               />
-            ))}
-          </>
+            )
+          )
         )}
       </ScrollView>
     </SafeAreaView>
@@ -223,12 +271,11 @@ export default function TripsScreen({ navigation }: Props) {
 
 function Header({ count }: { count: number }) {
   return (
-    <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
+    <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>My Trips</Text>
+        <Text style={{ fontSize: 22, fontWeight: '700', color: '#FFFFFF' }}>My Trips</Text>
         <Text style={{ fontSize: 12, fontWeight: '600', color: colors.gold }}>{count} bookings</Text>
       </View>
-      <Text style={{ fontSize: 13, color: 'rgba(255,255,255,0.5)' }}>Your complete booking history</Text>
     </View>
   );
 }

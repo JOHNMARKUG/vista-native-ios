@@ -1,28 +1,18 @@
 import React, { useState } from 'react';
-import { Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import ServiceCard from '../../components/ServiceCard';
 import VISTAButton from '../../components/VISTAButton';
-import { colors, radius, shadows, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
 const WHATSAPP_NUMBER = '256785585703';
-
-const SERVICE_KEYS: {
-  key: 'VistaRides' | 'AirportTransfer' | 'PilgrimagePackage';
-  icon: keyof typeof Ionicons.glyphMap;
-  labelKey: string;
-  sublabelKey: string;
-}[] = [
-  { key: 'VistaRides', icon: 'car-outline', labelKey: 'home.serviceRides', sublabelKey: 'home.serviceRidesSub' },
-  { key: 'AirportTransfer', icon: 'airplane-outline', labelKey: 'home.serviceAirport', sublabelKey: 'home.serviceAirportSub' },
-  { key: 'PilgrimagePackage', icon: 'business-outline', labelKey: 'home.servicePilgrimage', sublabelKey: 'home.servicePilgrimageSub' },
-];
 
 export default function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
@@ -30,13 +20,15 @@ export default function HomeScreen({ navigation }: Props) {
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? t('home.goodMorning') : hour < 17 ? t('home.goodAfternoon') : t('home.goodEvening');
 
-  const handleBook = (screen: (typeof SERVICE_KEYS)[number]['key']) => {
+  const requireAuth = (action: () => void) => {
     if (!user) {
       setShowLoginPrompt(true);
       return;
     }
-    navigation.navigate(screen);
+    action();
   };
 
   const openWhatsApp = () => {
@@ -45,62 +37,78 @@ export default function HomeScreen({ navigation }: Props) {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: colors.card }}>
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
       <SafeAreaView edges={['top']} style={{ backgroundColor: colors.navy }}>
         <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.lg, paddingTop: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: spacing.md }}>
-            <Image source={require('../../../assets/vista-logo.png')} style={{ width: 28, height: 28, resizeMode: 'contain' }} />
-            <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 15 }}>VISTA Transport</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flex: 1 }}>
+              <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>
+                {greeting}, {firstName}
+              </Text>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
+                <Ionicons name="location" size={14} color={colors.gold} />
+                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{t('home.locationLabel')}</Text>
+              </View>
+            </View>
+            <Pressable
+              onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
+              hitSlop={10}
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
+            </Pressable>
           </View>
-          <Text style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>{t('home.welcomeBack')}</Text>
-          <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>{firstName}</Text>
         </View>
       </SafeAreaView>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}>
-        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, marginBottom: spacing.sm }}>
+        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy, marginBottom: spacing.sm }}>
           {t('home.services')}
         </Text>
 
-        <View style={{ gap: spacing.sm }}>
-          {SERVICE_KEYS.map((service) => (
-            <Pressable
-              key={service.key}
-              onPress={() => handleBook(service.key)}
-              style={({ pressed }) => [
-                {
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: spacing.md,
-                  backgroundColor: colors.card,
-                  borderRadius: radius.card,
-                  borderWidth: 1,
-                  borderColor: colors.border,
-                  padding: spacing.md,
-                  opacity: pressed ? 0.85 : 1,
-                },
-                shadows.card,
-              ]}
-            >
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: radius.control,
-                  backgroundColor: colors.navy,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <Ionicons name={service.icon} size={24} color={colors.background} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>{t(service.labelKey)}</Text>
-                <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{t(service.sublabelKey)}</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-            </Pressable>
-          ))}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+          <ServiceCard
+            icon="business-outline"
+            label={t('home.servicePilgrimage')}
+            sublabel={t('home.servicePilgrimageSub')}
+            onPress={() => requireAuth(() => navigation.navigate('PilgrimagePackage'))}
+          />
+          <ServiceCard
+            icon="car-outline"
+            label={t('home.serviceRides')}
+            sublabel={t('home.serviceRidesSub')}
+            onPress={() => requireAuth(() => navigation.navigate('VistaRides'))}
+          />
+          <ServiceCard
+            icon="airplane-outline"
+            label={t('home.serviceAirport')}
+            sublabel={t('home.serviceAirportSub')}
+            onPress={() => requireAuth(() => navigation.navigate('AirportTransfer'))}
+          />
+          <ServiceCard
+            icon="time-outline"
+            label={t('home.serviceHourly')}
+            sublabel={t('home.serviceHourlySub')}
+            onPress={() => requireAuth(() => Alert.alert(t('home.serviceHourly'), t('home.serviceHourlyComingSoon')))}
+          />
+        </View>
+
+        <View
+          style={{
+            backgroundColor: colors.navy,
+            borderRadius: radius.card,
+            padding: spacing.lg,
+            marginTop: spacing.lg,
+          }}
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 17, fontWeight: '700', lineHeight: 23, marginBottom: spacing.md }}>
+            {t('home.featuredTitle')}
+          </Text>
+          <VISTAButton
+            title={t('home.featuredButton')}
+            variant="accent"
+            onPress={() => requireAuth(() => navigation.navigate('PilgrimagePackage'))}
+          />
         </View>
 
         <Pressable

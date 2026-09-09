@@ -27,10 +27,35 @@ export default function OnboardingScreen({ navigation }: Props) {
   const [index, setIndex] = useState(0);
 
   const slides = [
-    { icon: 'car-outline' as const, title: t('onboarding.slide1Title'), body: t('onboarding.slide1Body') },
-    { icon: 'business-outline' as const, title: t('onboarding.slide2Title'), body: t('onboarding.slide2Body') },
-    { icon: 'navigate-outline' as const, title: t('onboarding.slide3Title'), body: t('onboarding.slide3Body') },
+    {
+      icon: 'airplane-outline' as const,
+      title: t('onboarding.slide1Title'),
+      body: t('onboarding.slide1Body'),
+      bg: colors.navy,
+      fg: '#FFFFFF',
+      buttonVariant: 'accent' as const,
+    },
+    {
+      icon: 'car-outline' as const,
+      title: t('onboarding.slide2Title'),
+      body: t('onboarding.slide2Body'),
+      bg: '#FFFFFF',
+      fg: colors.navy,
+      buttonVariant: 'primary' as const,
+    },
+    {
+      icon: 'map-outline' as const,
+      title: t('onboarding.slide3Title'),
+      body: t('onboarding.slide3Body'),
+      bg: colors.navy,
+      fg: '#FFFFFF',
+      buttonVariant: 'accent' as const,
+    },
   ];
+
+  const current = slides[index];
+  const isLast = index === slides.length - 1;
+  const isDark = current.bg === colors.navy;
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const i = Math.round(e.nativeEvent.contentOffset.x / width);
@@ -42,13 +67,19 @@ export default function OnboardingScreen({ navigation }: Props) {
     navigation.replace('Login');
   };
 
-  const isLast = index === slides.length - 1;
-
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.navy }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: current.bg }} edges={['top', 'bottom']}>
       <View style={{ alignItems: 'flex-end', paddingHorizontal: spacing.lg }}>
         {!isLast && (
-          <Text onPress={finish} style={{ color: 'rgba(255,255,255,0.6)', fontSize: 15, fontWeight: '600', paddingVertical: 8 }}>
+          <Text
+            onPress={finish}
+            style={{
+              color: isDark ? 'rgba(255,255,255,0.6)' : colors.textSecondary,
+              fontSize: 15,
+              fontWeight: '600',
+              paddingVertical: 8,
+            }}
+          >
             {t('common.skip')}
           </Text>
         )}
@@ -63,25 +94,34 @@ export default function OnboardingScreen({ navigation }: Props) {
         style={{ flex: 1 }}
       >
         {slides.map((slide, i) => (
-          <View key={i} style={{ width, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl }}>
+          <View
+            key={i}
+            style={{ width, backgroundColor: slide.bg, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl }}
+          >
             <View
               style={{
-                width: 88,
-                height: 88,
-                borderRadius: 8,
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.2)',
+                width: 96,
+                height: 96,
+                borderRadius: 48,
+                backgroundColor: slide.bg === colors.navy ? 'rgba(255,255,255,0.12)' : 'rgba(27,46,107,0.08)',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: spacing.xl,
               }}
             >
-              <Ionicons name={slide.icon} size={44} color={colors.gold} />
+              <Ionicons name={slide.icon} size={48} color={slide.bg === colors.navy ? colors.gold : colors.navy} />
             </View>
-            <Text style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', textAlign: 'center', marginBottom: spacing.sm }}>
+            <Text style={{ color: slide.fg, fontSize: 26, fontWeight: '700', textAlign: 'center', marginBottom: spacing.sm }}>
               {slide.title}
             </Text>
-            <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15, textAlign: 'center', lineHeight: 22 }}>
+            <Text
+              style={{
+                color: slide.bg === colors.navy ? 'rgba(255,255,255,0.7)' : colors.textSecondary,
+                fontSize: 15,
+                textAlign: 'center',
+                lineHeight: 22,
+              }}
+            >
               {slide.body}
             </Text>
           </View>
@@ -96,7 +136,7 @@ export default function OnboardingScreen({ navigation }: Props) {
               width: i === index ? 22 : 8,
               height: 8,
               borderRadius: 4,
-              backgroundColor: i === index ? colors.gold : 'rgba(255,255,255,0.25)',
+              backgroundColor: i === index ? colors.gold : isDark ? 'rgba(255,255,255,0.25)' : colors.border,
             }}
           />
         ))}
@@ -105,7 +145,7 @@ export default function OnboardingScreen({ navigation }: Props) {
       <View style={{ paddingHorizontal: spacing.lg, paddingBottom: spacing.md }}>
         <VISTAButton
           title={isLast ? t('onboarding.getStarted') : t('common.next')}
-          variant="accent"
+          variant={current.buttonVariant}
           onPress={() => {
             if (isLast) {
               finish();

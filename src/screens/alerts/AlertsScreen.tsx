@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import VISTAButton from '../../components/VISTAButton';
-import { colors, radius, spacing } from '../../lib/theme';
+import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Notification = {
   id: string;
@@ -103,10 +103,10 @@ export default function AlertsScreen() {
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top']}>
-      <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.md, paddingBottom: spacing.md }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
+      <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-          <Text style={{ fontSize: 22, fontWeight: '800', color: '#FFFFFF' }}>Alerts</Text>
+          <Text style={{ fontSize: 22, fontWeight: '700', color: '#FFFFFF' }}>Notifications</Text>
           {unreadCount > 0 && (
             <Pressable onPress={markAllRead} style={{ backgroundColor: colors.gold, borderRadius: radius.tag, paddingVertical: 6, paddingHorizontal: 12 }}>
               <Text style={{ fontSize: 11, fontWeight: '600', color: colors.navy }}>Mark all read</Text>
@@ -165,15 +165,18 @@ export default function AlertsScreen() {
               <Pressable
                 key={notif.id}
                 onPress={() => markAsRead(notif.id)}
-                style={{
-                  flexDirection: 'row',
-                  gap: 12,
-                  backgroundColor: notif.is_read ? colors.card : 'rgba(27,46,107,0.04)',
-                  borderRadius: 8,
-                  padding: 14,
-                }}
+                style={[
+                  {
+                    flexDirection: 'row',
+                    gap: 12,
+                    backgroundColor: notif.is_read ? colors.card : '#F5F7FC',
+                    borderRadius: radius.card,
+                    padding: 14,
+                  },
+                  shadows.card,
+                ]}
               >
-                <View style={{ width: 44, height: 44, borderRadius: radius.control, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center' }}>
+                <View style={{ width: 44, height: 44, borderRadius: radius.card, backgroundColor: cfg.bg, alignItems: 'center', justifyContent: 'center' }}>
                   <Ionicons name={cfg.icon} size={22} color={cfg.color} />
                 </View>
                 <View style={{ flex: 1 }}>

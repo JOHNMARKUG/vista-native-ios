@@ -51,7 +51,7 @@ export default function LanguageScreen({ navigation }: Props) {
                 </View>
                 {selected === code && <Ionicons name="checkmark-circle" size={22} color={colors.navy} />}
               </Pressable>
-              {i < SUPPORTED_LANGUAGES.length - 1 && <View style={{ height: 1, backgroundColor: colors.background, marginLeft: spacing.md }} />}
+              {i < SUPPORTED_LANGUAGES.length - 1 && <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing.md }} />}
             </React.Fragment>
           ))}
         </VISTACard>

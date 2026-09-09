@@ -7,7 +7,7 @@ import {
   type PressableProps,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { colors } from '../lib/theme';
+import { colors, radius } from '../lib/theme';
 
 type Variant = 'primary' | 'accent' | 'outline' | 'outlineLight' | 'ghost';
 
@@ -60,8 +60,8 @@ export default function VISTAButton({
       {...rest}
       style={({ pressed }) => [
         {
-          height: 50,
-          borderRadius: 8,
+          height: 52,
+          borderRadius: radius.button,
           alignItems: 'center',
           justifyContent: 'center',
           flexDirection: 'row',
@@ -82,7 +82,7 @@ export default function VISTAButton({
           {icon}
           <Text
             style={{
-              fontSize: 17,
+              fontSize: 16,
               fontWeight: '600',
               color: isDisabled ? '#B0B0B6' : style.text,
             }}

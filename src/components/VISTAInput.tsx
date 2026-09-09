@@ -1,17 +1,27 @@
 import React, { forwardRef, useState } from 'react';
 import { Text, TextInput, View, type TextInputProps } from 'react-native';
-import { colors } from '../lib/theme';
+import { colors, radius } from '../lib/theme';
 
 type Props = TextInputProps & {
   label?: string;
   error?: string;
   leftIcon?: React.ReactNode;
+  /** Resting (unfocused, no error) border color. Defaults to the standard gray. */
+  restingBorderColor?: string;
 };
 
+/**
+ * The input box is always a white surface, on every screen — so its text
+ * color is intentionally NOT overridable through the `style` prop. A caller
+ * once passed `style={{ color: '#FFFFFF' }}` intending to theme the screen
+ * around it, which rendered invisible white text on this white box. Layout
+ * tweaks from `style` still apply; `color` always resolves to black (or red
+ * for an error) regardless of what's passed in.
+ */
 const VISTAInput = forwardRef<TextInput, Props>(
-  ({ label, error, leftIcon, style, onFocus, onBlur, ...rest }, ref) => {
+  ({ label, error, leftIcon, style, restingBorderColor, onFocus, onBlur, ...rest }, ref) => {
     const [focused, setFocused] = useState(false);
-    const borderColor = error ? colors.error : focused ? colors.navy : colors.border;
+    const borderColor = error ? colors.error : focused ? colors.navy : restingBorderColor ?? colors.border;
 
     return (
       <View style={{ gap: 6 }}>
@@ -22,22 +32,27 @@ const VISTAInput = forwardRef<TextInput, Props>(
         ) : null}
         <View
           style={{
-            height: 50,
-            borderRadius: 8,
+            height: 52,
+            borderRadius: radius.input,
             backgroundColor: colors.card,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderColor,
             flexDirection: 'row',
             alignItems: 'center',
-            paddingHorizontal: 14,
+            paddingHorizontal: 16,
             gap: 8,
           }}
         >
           {leftIcon}
           <TextInput
             ref={ref}
-            placeholderTextColor="#9297AA"
-            style={[{ flex: 1, fontSize: 17, color: colors.textPrimary, height: '100%' }, style]}
+            placeholderTextColor={colors.textSecondary}
+            {...rest}
+            style={[
+              { flex: 1, fontSize: 16, height: '100%' },
+              style,
+              { color: error ? colors.error : colors.textPrimary },
+            ]}
             onFocus={(e) => {
               setFocused(true);
               onFocus?.(e);
@@ -46,7 +61,6 @@ const VISTAInput = forwardRef<TextInput, Props>(
               setFocused(false);
               onBlur?.(e);
             }}
-            {...rest}
           />
         </View>
         {error ? (

@@ -17,7 +17,7 @@ import { useAuth } from '../../context/AuthContext';
 import { GOOGLE_IOS_CLIENT_ID } from '../../lib/google-auth';
 import VISTAButton from '../../components/VISTAButton';
 import VISTAInput from '../../components/VISTAInput';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 // Required once per app so a completed web-based auth session (Google's
 // consent screen) closes and hands control back to this screen.
@@ -35,15 +35,15 @@ export default function LoginScreen({ navigation }: Props) {
   const { sendOtp, enterGuestMode, signInWithApple, completeGoogleSignIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
-  const [appleAvailable, setAppleAvailable] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  useEffect(() => {
-    if (Platform.OS === 'ios') {
-      AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
-    }
-  }, []);
+  // expo-apple-authentication's native capability (isAvailableAsync) only
+  // resolves true on a real device running a build with the entitlement —
+  // never in Expo Go. Showing the button unconditionally on iOS lets the
+  // rest of the screen be reviewed in Expo Go; a tap there fails gracefully
+  // (see handleApple) instead of the button just never appearing.
+  const showAppleButton = Platform.OS === 'ios';
 
   // Explicit redirectUri instead of the hook's own default: the default
   // builds `<bundleId>:/oauthredirect`, which requires the bundle id itself
@@ -76,7 +76,11 @@ export default function LoginScreen({ navigation }: Props) {
       });
     } else if (response.type === 'error') {
       setGoogleLoading(false);
-      Alert.alert('Sign in failed', response.error?.message ?? 'Google sign-in failed. Please try again.');
+      Alert.alert(
+        'Sign in failed',
+        response.error?.message ??
+          'Google sign-in failed. If this is a 400 error, the OAuth consent screen may still be in "Testing" mode in Google Cloud Console — publish it or add this account as a test user.'
+      );
     } else {
       // 'cancel' / 'dismiss' — the user backed out, nothing to report.
       setGoogleLoading(false);
@@ -107,9 +111,20 @@ export default function LoginScreen({ navigation }: Props) {
 
   const handleApple = async () => {
     setAppleLoading(true);
-    const { error, cancelled } = await signInWithApple();
-    setAppleLoading(false);
-    if (error && !cancelled) Alert.alert('Sign in failed', error);
+    try {
+      const isAvailable = await AppleAuthentication.isAvailableAsync();
+      if (!isAvailable) {
+        Alert.alert(
+          'Not available here',
+          'Sign in with Apple needs a real iOS device running a development or production build — it never works inside Expo Go.'
+        );
+        return;
+      }
+      const { error, cancelled } = await signInWithApple();
+      if (error && !cancelled) Alert.alert('Sign in failed', error);
+    } finally {
+      setAppleLoading(false);
+    }
   };
 
   const handleGoogle = () => {
@@ -118,25 +133,24 @@ export default function LoginScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.navy }} edges={['top', 'bottom']}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top', 'bottom']}>
       <KeyboardAwareScrollView
         bottomOffset={24}
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.lg }}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={{ alignItems: 'center', paddingTop: spacing.xl, paddingBottom: spacing.xl, gap: 10 }}>
+        <View style={{ alignItems: 'center', paddingTop: spacing.xl, paddingBottom: spacing.lg }}>
           <Image
             source={require('../../../assets/vista-logo.png')}
-            style={{ width: 56, height: 56, resizeMode: 'contain' }}
+            style={{ width: 48, height: 48, resizeMode: 'contain' }}
           />
-          <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '600' }}>VISTA Transport</Text>
         </View>
 
-        <Text style={{ color: '#FFFFFF', fontSize: 26, fontWeight: '700', marginBottom: spacing.sm }}>
-          {t('auth.welcomeToVISTA')}
+        <Text style={{ color: colors.navy, fontSize: 24, fontWeight: '700', marginBottom: 6 }}>
+          Sign in to VISTA
         </Text>
-        <Text style={{ color: 'rgba(255,255,255,0.65)', fontSize: 15, lineHeight: 22, marginBottom: spacing.xl }}>
-          {t('auth.enterEmailAddress')}
+        <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: spacing.xl }}>
+          Enter your email to receive a 6-digit code
         </Text>
 
         <Controller
@@ -158,8 +172,8 @@ export default function LoginScreen({ navigation }: Props) {
               returnKeyType="send"
               onSubmitEditing={handleSubmit(onSubmit)}
               error={errors.email?.message ?? serverError ?? undefined}
-              leftIcon={<Ionicons name="mail-outline" size={18} color="rgba(255,255,255,0.6)" />}
-              style={{ color: '#FFFFFF' }}
+              restingBorderColor={colors.navy}
+              leftIcon={<Ionicons name="mail-outline" size={18} color={colors.navy} />}
             />
           )}
         />
@@ -175,30 +189,40 @@ export default function LoginScreen({ navigation }: Props) {
         />
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: spacing.lg }}>
-          <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.15)' }} />
-          <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>or</Text>
-          <View style={{ flex: 1, height: 1, backgroundColor: 'rgba(255,255,255,0.15)' }} />
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>or continue with</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          {appleAvailable && (
-            <AppleAuthentication.AppleAuthenticationButton
-              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
-              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
-              cornerRadius={8}
-              style={{ height: 50, opacity: appleLoading ? 0.7 : 1 }}
+          {showAppleButton && (
+            <Pressable
               onPress={handleApple}
-            />
+              disabled={appleLoading}
+              style={({ pressed }) => ({
+                height: 52,
+                borderRadius: radius.button,
+                backgroundColor: '#000000',
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                opacity: pressed || appleLoading ? 0.8 : 1,
+              })}
+            >
+              <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
+              <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>Continue with Apple</Text>
+            </Pressable>
           )}
 
           <Pressable
             onPress={handleGoogle}
             disabled={!request || googleLoading}
             style={({ pressed }) => ({
-              height: 50,
-              borderRadius: 8,
+              height: 52,
+              borderRadius: radius.button,
               borderWidth: 1,
-              borderColor: colors.border,
+              borderColor: colors.navy,
               backgroundColor: '#FFFFFF',
               flexDirection: 'row',
               alignItems: 'center',
@@ -207,10 +231,8 @@ export default function LoginScreen({ navigation }: Props) {
               opacity: pressed || googleLoading || !request ? 0.7 : 1,
             })}
           >
-            <Ionicons name="logo-google" size={18} color={colors.textPrimary} />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>
-              Continue with Google
-            </Text>
+            <Ionicons name="logo-google" size={18} color="#EA4335" />
+            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.navy }}>Continue with Google</Text>
           </Pressable>
         </View>
 
@@ -218,14 +240,14 @@ export default function LoginScreen({ navigation }: Props) {
           onPress={() => enterGuestMode()}
           style={{ paddingVertical: spacing.lg, alignItems: 'center' }}
         >
-          <Text style={{ color: 'rgba(255,255,255,0.5)', fontSize: 14, fontWeight: '500' }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
             {t('auth.browseWithoutAccount')}
           </Text>
         </Pressable>
 
         <View style={{ flex: 1 }} />
 
-        <Text style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11, textAlign: 'center', lineHeight: 18, paddingBottom: spacing.lg }}>
+        <Text style={{ color: colors.textSecondary, fontSize: 11, textAlign: 'center', lineHeight: 18, paddingBottom: spacing.lg }}>
           {t('auth.termsAgreement')} {t('auth.termsOfService')} {t('auth.and')} {t('auth.privacyPolicy')}.
         </Text>
       </KeyboardAwareScrollView>

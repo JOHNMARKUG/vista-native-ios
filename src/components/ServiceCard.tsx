@@ -2,18 +2,20 @@ import React from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { colors, radius, shadows } from '../lib/theme';
+import { colors, radius, shadows, spacing } from '../lib/theme';
 
 type Props = {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  sublabel?: string;
-  badge?: string;
-  accent?: boolean;
+  sublabel: string;
   onPress?: () => void;
 };
 
-export default function ServiceCard({ icon, label, sublabel, badge, accent, onPress }: Props) {
+/**
+ * Home-screen service tile — half-width in a 2-column grid. Icon top-left,
+ * name + description below, a small gold "go" arrow top-right.
+ */
+export default function ServiceCard({ icon, label, sublabel, onPress }: Props) {
   return (
     <Pressable
       onPress={() => {
@@ -22,57 +24,33 @@ export default function ServiceCard({ icon, label, sublabel, badge, accent, onPr
       }}
       style={({ pressed }) => [
         {
-          flex: 1,
+          flexBasis: '48%',
+          flexGrow: 1,
           backgroundColor: colors.card,
           borderRadius: radius.card,
-          borderWidth: 1,
-          borderColor: colors.border,
-          paddingVertical: 14,
-          paddingHorizontal: 8,
-          alignItems: 'center',
-          gap: 8,
-          opacity: pressed ? 0.85 : 1,
+          padding: spacing.md,
+          opacity: pressed ? 0.9 : 1,
         },
         shadows.card,
       ]}
     >
-      {badge ? (
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm }}>
         <View
           style={{
-            position: 'absolute',
-            top: 8,
-            right: 8,
-            backgroundColor: accent ? colors.gold : colors.navy,
-            borderRadius: radius.tag,
-            paddingVertical: 3,
-            paddingHorizontal: 6,
+            width: 44,
+            height: 44,
+            borderRadius: radius.card,
+            backgroundColor: colors.navy,
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
-          <Text style={{ fontSize: 8, fontWeight: '700', color: accent ? colors.navy : '#FFFFFF', letterSpacing: 0.4 }}>
-            {badge}
-          </Text>
+          <Ionicons name={icon} size={22} color="#FFFFFF" />
         </View>
-      ) : null}
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: radius.control,
-          backgroundColor: accent ? colors.gold : colors.navy,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Ionicons name={icon} size={22} color={accent ? colors.navy : '#F2F2F7'} />
+        <Ionicons name="arrow-forward-circle" size={22} color={colors.gold} />
       </View>
-      <Text style={{ fontSize: 11.5, fontWeight: '600', color: colors.textPrimary, textAlign: 'center', lineHeight: 15 }}>
-        {label}
-      </Text>
-      {sublabel ? (
-        <Text style={{ fontSize: 10, color: colors.textSecondary, textAlign: 'center' }} numberOfLines={1}>
-          {sublabel}
-        </Text>
-      ) : null}
+      <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy, marginBottom: 2 }}>{label}</Text>
+      <Text style={{ fontSize: 12, color: colors.textSecondary, lineHeight: 16 }}>{sublabel}</Text>
     </Pressable>
   );
 }

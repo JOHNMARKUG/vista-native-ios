@@ -306,7 +306,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
               <SummaryRow label="Duration" value={`${durationDays} days`} />
               <SummaryRow label="Hotel" value={hotelName || '—'} />
               <SummaryRow label="Group size" value={String(groupSize)} />
-              <View style={{ borderTopWidth: 1, borderTopColor: colors.background, marginTop: 4, paddingTop: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View style={{ borderTopWidth: 1, borderTopColor: colors.border, marginTop: 4, paddingTop: 8, flexDirection: 'row', justifyContent: 'space-between' }}>
                 <Text style={{ fontWeight: '700', color: colors.navy }}>Total</Text>
                 <Text style={{ fontWeight: '800', fontSize: 18, color: colors.navy }}>USD {totalUsd}</Text>
               </View>
