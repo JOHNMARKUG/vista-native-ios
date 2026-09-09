@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Image, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -8,12 +8,20 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
+import * as AuthSession from 'expo-auth-session';
+import * as Google from 'expo-auth-session/providers/google';
+import * as WebBrowser from 'expo-web-browser';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { GOOGLE_IOS_CLIENT_ID } from '../../lib/google-auth';
 import VISTAButton from '../../components/VISTAButton';
 import VISTAInput from '../../components/VISTAInput';
 import { colors, spacing } from '../../lib/theme';
+
+// Required once per app so a completed web-based auth session (Google's
+// consent screen) closes and hands control back to this screen.
+WebBrowser.maybeCompleteAuthSession();
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email('Please enter a valid email address'),
@@ -24,7 +32,7 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { sendOtp, enterGuestMode, signInWithApple, signInWithGoogle } = useAuth();
+  const { sendOtp, enterGuestMode, signInWithApple, completeGoogleSignIn } = useAuth();
   const [loading, setLoading] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
   const [appleAvailable, setAppleAvailable] = useState(false);
@@ -36,6 +44,44 @@ export default function LoginScreen({ navigation }: Props) {
       AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
     }
   }, []);
+
+  // Explicit redirectUri instead of the hook's own default: the default
+  // builds `<bundleId>:/oauthredirect`, which requires the bundle id itself
+  // to be a registered URL scheme. This app registers `vistatransport`
+  // (app.json `scheme`) instead, so we point the redirect there — it also
+  // resolves correctly to an exp:// proxy URL automatically when running in
+  // Expo Go, no extra config needed for that case.
+  const redirectUri = useMemo(
+    () => AuthSession.makeRedirectUri({ scheme: 'vistatransport', path: 'oauthredirect' }),
+    []
+  );
+
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    iosClientId: GOOGLE_IOS_CLIENT_ID,
+    redirectUri,
+  });
+
+  useEffect(() => {
+    if (!response) return;
+    if (response.type === 'success') {
+      const idToken = response.params?.id_token;
+      if (!idToken) {
+        setGoogleLoading(false);
+        Alert.alert('Sign in failed', 'Google did not return a sign-in token. Please try again.');
+        return;
+      }
+      completeGoogleSignIn(idToken).then(({ error }) => {
+        setGoogleLoading(false);
+        if (error) Alert.alert('Sign in failed', error);
+      });
+    } else if (response.type === 'error') {
+      setGoogleLoading(false);
+      Alert.alert('Sign in failed', response.error?.message ?? 'Google sign-in failed. Please try again.');
+    } else {
+      // 'cancel' / 'dismiss' — the user backed out, nothing to report.
+      setGoogleLoading(false);
+    }
+  }, [response, completeGoogleSignIn]);
 
   const {
     control,
@@ -66,11 +112,9 @@ export default function LoginScreen({ navigation }: Props) {
     if (error && !cancelled) Alert.alert('Sign in failed', error);
   };
 
-  const handleGoogle = async () => {
+  const handleGoogle = () => {
     setGoogleLoading(true);
-    const { error, cancelled } = await signInWithGoogle();
-    setGoogleLoading(false);
-    if (error && !cancelled) Alert.alert('Sign in failed', error);
+    promptAsync();
   };
 
   return (
@@ -149,7 +193,7 @@ export default function LoginScreen({ navigation }: Props) {
 
           <Pressable
             onPress={handleGoogle}
-            disabled={googleLoading}
+            disabled={!request || googleLoading}
             style={({ pressed }) => ({
               height: 50,
               borderRadius: 8,
@@ -160,7 +204,7 @@ export default function LoginScreen({ navigation }: Props) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 10,
-              opacity: pressed || googleLoading ? 0.85 : 1,
+              opacity: pressed || googleLoading || !request ? 0.7 : 1,
             })}
           >
             <Ionicons name="logo-google" size={18} color={colors.textPrimary} />

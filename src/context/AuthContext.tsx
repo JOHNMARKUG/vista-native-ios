@@ -7,15 +7,8 @@ import React, {
   useState,
 } from 'react';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import {
-  GoogleSignin,
-  isErrorWithCode,
-  isSuccessResponse,
-  statusCodes,
-} from '@react-native-google-signin/google-signin';
 import type { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
-import { GOOGLE_IOS_CLIENT_ID } from '../lib/google-auth';
 
 export type Profile = {
   id: string;
@@ -42,19 +35,13 @@ type AuthContextValue = {
   sendOtp: (email: string) => Promise<{ error: string | null }>;
   verifyOtp: (email: string, token: string) => Promise<{ error: string | null; user: User | null }>;
   signInWithApple: () => Promise<{ error: string | null; cancelled?: boolean }>;
-  signInWithGoogle: () => Promise<{ error: string | null; cancelled?: boolean }>;
+  /** Finishes a Google sign-in once LoginScreen's expo-auth-session flow has an id_token. */
+  completeGoogleSignIn: (idToken: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-// Configured once here (not per-screen) so there's a single source of truth —
-// calling GoogleSignin.configure() again from LoginScreen would silently
-// overwrite this on every mount.
-GoogleSignin.configure({
-  iosClientId: GOOGLE_IOS_CLIENT_ID,
-});
 
 /**
  * Seeds a profile row for a brand-new user, or quietly touches only the
@@ -182,29 +169,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [fetchProfile]);
 
-  const signInWithGoogle = useCallback(async () => {
+  const completeGoogleSignIn = useCallback(async (idToken: string) => {
     try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const response = await GoogleSignin.signIn();
-      if (!isSuccessResponse(response) || !response.data.idToken) {
-        return { error: 'Google did not return a sign-in token. Please try again.' };
-      }
-
       const { data, error } = await supabase.auth.signInWithIdToken({
         provider: 'google',
-        token: response.data.idToken,
+        token: idToken,
       });
       if (error) return { error: error.message };
 
       if (data.user) {
-        await ensureProfile(data.user.id, data.user.email ?? response.data.user.email, response.data.user.name);
+        // Supabase maps standard OIDC claims (name, email) from the Google
+        // id_token into user_metadata automatically.
+        const seedName = (data.user.user_metadata?.full_name ?? data.user.user_metadata?.name) as
+          | string
+          | undefined;
+        await ensureProfile(data.user.id, data.user.email ?? null, seedName);
         await fetchProfile(data.user.id);
       }
       return { error: null };
     } catch (err) {
-      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
-        return { error: null, cancelled: true };
-      }
       return { error: (err as Error)?.message ?? 'Google sign-in failed. Please try again.' };
     }
   }, [fetchProfile]);
@@ -212,13 +195,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setProfile(null);
-    try {
-      if (await GoogleSignin.getCurrentUser()) {
-        await GoogleSignin.signOut();
-      }
-    } catch {
-      // Not signed in via Google — nothing to clean up.
-    }
   }, []);
 
   const refreshProfile = useCallback(async () => {
@@ -238,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         sendOtp,
         verifyOtp,
         signInWithApple,
-        signInWithGoogle,
+        completeGoogleSignIn,
         signOut,
         refreshProfile,
       }}
