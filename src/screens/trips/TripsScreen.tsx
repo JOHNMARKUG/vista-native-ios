@@ -209,10 +209,11 @@ export default function TripsScreen({ navigation }: Props) {
             </Text>
           </View>
         ) : (
-          trips.map((trip) =>
+          trips.map((trip, index) =>
             trip.source === 'ride' ? (
               <BookingCard
                 key={trip.data.id}
+                index={index}
                 icon={RIDE_ICONS[trip.data.ride_type] ?? 'car-outline'}
                 reference={trip.data.booking_ref}
                 title={RIDE_LABELS[trip.data.ride_type] ?? 'VISTA Ride'}
@@ -226,6 +227,7 @@ export default function TripsScreen({ navigation }: Props) {
             ) : (
               <BookingCard
                 key={trip.data.id}
+                index={index}
                 icon={SERVICE_ICONS[trip.data.service_type] ?? 'car-outline'}
                 reference={trip.data.booking_ref}
                 title={SERVICE_LABELS[trip.data.service_type] ?? trip.data.service_type}

@@ -1,6 +1,8 @@
 import React from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { FadeInDown } from 'react-native-reanimated';
+import AnimatedPressable from './AnimatedPressable';
 import { colors, radius, shadows } from '../lib/theme';
 import StatusBadge, { type BookingStatus } from './StatusBadge';
 
@@ -16,6 +18,8 @@ type Props = {
   priceLabel?: string;
   driverAssigned?: boolean;
   onPress?: () => void;
+  /** Position in its list, purely to stagger the entrance animation. */
+  index?: number;
 };
 
 export default function BookingCard({
@@ -30,17 +34,18 @@ export default function BookingCard({
   priceLabel,
   driverAssigned,
   onPress,
+  index = 0,
 }: Props) {
   return (
-    <Pressable
+    <AnimatedPressable
       onPress={onPress}
-      style={({ pressed }) => [
+      entering={FadeInDown.delay(index * 60).springify().damping(18)}
+      style={[
         {
           backgroundColor: colors.card,
           borderRadius: radius.card,
           padding: 16,
           gap: 10,
-          opacity: pressed ? 0.9 : 1,
         },
         shadows.card,
       ]}
@@ -114,7 +119,7 @@ export default function BookingCard({
           ) : null}
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

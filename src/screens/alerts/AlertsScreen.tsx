@@ -2,11 +2,13 @@ import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react'
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
+import { FadeInDown } from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AlertsStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import VISTAButton from '../../components/VISTAButton';
+import AnimatedPressable from '../../components/AnimatedPressable';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<AlertsStackParamList, 'Alerts'>;
@@ -162,12 +164,13 @@ export default function AlertsScreen({ navigation }: Props) {
           <Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>No alerts yet</Text>
         </View>
       ) : (
-        notifications.map((notif) => {
+        notifications.map((notif, index) => {
           const cfg = ICON_CONFIG[notif.type ?? ''] ?? DEFAULT_ICON;
           return (
-            <Pressable
+            <AnimatedPressable
               key={notif.id}
               onPress={() => markAsRead(notif.id)}
+              entering={FadeInDown.delay(index * 60).springify().damping(18)}
               style={[
                 {
                   flexDirection: 'row',
@@ -190,7 +193,7 @@ export default function AlertsScreen({ navigation }: Props) {
                 <Text style={{ fontSize: 11, color: colors.textSecondary }}>{formatTime(notif.created_at)}</Text>
               </View>
               {!notif.is_read && <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colors.gold, marginTop: 4 }} />}
-            </Pressable>
+            </AnimatedPressable>
           );
         })
       )}
