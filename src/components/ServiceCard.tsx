@@ -12,13 +12,15 @@ type Props = {
   onPress?: () => void;
   /** Position in its grid, purely to stagger the entrance animation. */
   index?: number;
+  /** Short corner tag, e.g. "New" or "Soon" — omit for the common case. */
+  badge?: string;
 };
 
 /**
  * Home-screen service tile — half-width in a 2-column grid. Icon top-left,
  * name + description below, a small gold "go" arrow top-right.
  */
-export default function ServiceCard({ icon, label, sublabel, onPress, index = 0 }: Props) {
+export default function ServiceCard({ icon, label, sublabel, onPress, index = 0, badge }: Props) {
   return (
     <AnimatedPressable
       onPress={onPress}
@@ -34,6 +36,21 @@ export default function ServiceCard({ icon, label, sublabel, onPress, index = 0 
         shadows.card,
       ]}
     >
+      {badge && (
+        <View
+          style={{
+            position: 'absolute',
+            top: -8,
+            right: spacing.md,
+            backgroundColor: colors.gold,
+            borderRadius: radius.tag,
+            paddingVertical: 3,
+            paddingHorizontal: 8,
+          }}
+        >
+          <Text style={{ fontSize: 10, fontWeight: '700', color: colors.navy, letterSpacing: 0.3 }}>{badge}</Text>
+        </View>
+      )}
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.sm }}>
         <View
           style={{

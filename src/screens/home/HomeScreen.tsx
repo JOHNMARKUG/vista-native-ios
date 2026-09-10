@@ -194,6 +194,7 @@ export default function HomeScreen({ navigation }: Props) {
             icon="time-outline"
             label={t('home.serviceHourly')}
             sublabel={t('home.serviceHourlySub')}
+            badge="Soon"
             onPress={() => requireAuth(() => Alert.alert(t('home.serviceHourly'), t('home.serviceHourlyComingSoon')))}
           />
         </View>
