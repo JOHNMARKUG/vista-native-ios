@@ -1,7 +1,6 @@
 import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -14,6 +13,7 @@ import VISTAInputComp from '../../components/VISTAInput';
 import VISTACardComp from '../../components/VISTACard';
 import SegmentedControl from '../../components/SegmentedControl';
 import BookingSuccess from '../../components/BookingSuccess';
+import DatePickerSheet, { type DatePickerSheetRef } from '../../components/DatePickerSheet';
 import { toLocalDateString } from '../../lib/date';
 import { colors, radius, spacing } from '../../lib/theme';
 
@@ -40,7 +40,6 @@ export default function AirportTransferScreen({ navigation }: Props) {
   const [dropoff, setDropoff] = useState('');
   const [mode, setMode] = useState<'now' | 'later'>('later');
   const [date, setDate] = useState<Date>(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [flightNumber, setFlightNumber] = useState('');
   const [passengers, setPassengers] = useState(1);
   const [name, setName] = useState(profile?.full_name ?? '');
@@ -51,6 +50,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
+  const dateSheetRef = useRef<DatePickerSheetRef>(null);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: !bookedRef, gestureEnabled: !bookedRef });
@@ -211,22 +211,11 @@ export default function AirportTransferScreen({ navigation }: Props) {
           onChange={setMode}
         />
         {mode === 'later' && (
-          <Pressable onPress={() => setShowDatePicker(true)}>
+          <Pressable onPress={() => dateSheetRef.current?.present(date)}>
             <VISTACardComp>
               <Text style={{ fontSize: 16, color: colors.textPrimary }}>{date.toLocaleString()}</Text>
             </VISTACardComp>
           </Pressable>
-        )}
-        {showDatePicker && (
-          <DateTimePicker
-            value={date}
-            mode="datetime"
-            minimumDate={new Date()}
-            onChange={(_, d) => {
-              setShowDatePicker(false);
-              if (d) setDate(d);
-            }}
-          />
         )}
 
         <VISTAInputComp label="Flight number (optional)" placeholder="e.g. KQ412" value={flightNumber} onChangeText={setFlightNumber} autoCapitalize="characters" />
@@ -297,6 +286,14 @@ export default function AirportTransferScreen({ navigation }: Props) {
           ))}
         </BottomSheetView>
       </BottomSheetModal>
+
+      <DatePickerSheet
+        ref={dateSheetRef}
+        title="Pickup Date & Time"
+        mode="datetime"
+        minimumDate={new Date()}
+        onConfirm={setDate}
+      />
     </SafeAreaView>
   );
 }

@@ -1,7 +1,6 @@
-import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../../navigation/types';
@@ -19,6 +18,7 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
 import BookingSuccess from '../../components/BookingSuccess';
+import DatePickerSheet, { type DatePickerSheetRef } from '../../components/DatePickerSheet';
 import { toLocalDateString } from '../../lib/date';
 import { colors, radius, spacing } from '../../lib/theme';
 
@@ -34,16 +34,17 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
   const [hotels, setHotels] = useState<Hotel[]>([]);
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
+  const arrivalSheetRef = useRef<DatePickerSheetRef>(null);
+  const departureSheetRef = useRef<DatePickerSheetRef>(null);
+
   // Step 1 — arrival
   const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [flightNumber, setFlightNumber] = useState('');
   const [arrivalTime, setArrivalTime] = useState('');
 
   // Step 2 — tier
   const [tier, setTier] = useState<PackageTierKey | null>(null);
   const [customDeparture, setCustomDeparture] = useState<Date | null>(null);
-  const [showDepartureDatePicker, setShowDepartureDatePicker] = useState(false);
 
   // Step 3 — hotel
   const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
@@ -212,7 +213,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
         {step === 1 && (
           <>
             <Text style={styles.title}>When do you arrive?</Text>
-            <Pressable onPress={() => setShowDatePicker(true)}>
+            <Pressable onPress={() => arrivalSheetRef.current?.present(arrivalDate ?? new Date())}>
               <VISTACard>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
                   <Ionicons name="calendar" size={20} color={colors.gold} />
@@ -222,17 +223,6 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
                 </View>
               </VISTACard>
             </Pressable>
-            {showDatePicker && (
-              <DateTimePicker
-                value={arrivalDate ?? new Date()}
-                mode="date"
-                minimumDate={new Date()}
-                onChange={(_, date) => {
-                  setShowDatePicker(false);
-                  if (date) setArrivalDate(date);
-                }}
-              />
-            )}
             <VISTAInput label="Flight number (optional)" placeholder="e.g. KQ412" value={flightNumber} onChangeText={setFlightNumber} autoCapitalize="characters" />
             <VISTAInput label="Arrival time (optional)" placeholder="e.g. 14:30" value={arrivalTime} onChangeText={setArrivalTime} />
           </>
@@ -266,24 +256,13 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
               onPress={() => setTier('custom')}
             />
             {tier === 'custom' && (
-              <Pressable onPress={() => setShowDepartureDatePicker(true)}>
+              <Pressable onPress={() => departureSheetRef.current?.present(customDeparture ?? arrivalDate ?? new Date())}>
                 <VISTACard>
                   <Text style={{ fontSize: 17, color: colors.textPrimary }}>
                     {customDeparture ? `Departs ${customDeparture.toDateString()}` : 'Select departure date'}
                   </Text>
                 </VISTACard>
               </Pressable>
-            )}
-            {showDepartureDatePicker && (
-              <DateTimePicker
-                value={customDeparture ?? arrivalDate ?? new Date()}
-                mode="date"
-                minimumDate={arrivalDate ?? new Date()}
-                onChange={(_, date) => {
-                  setShowDepartureDatePicker(false);
-                  if (date) setCustomDeparture(date);
-                }}
-              />
             )}
           </>
         )}
@@ -368,6 +347,21 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
           onPress={step === TOTAL_STEPS ? handlePay : next}
         />
       </View>
+
+      <DatePickerSheet
+        ref={arrivalSheetRef}
+        title="Arrival Date"
+        mode="date"
+        minimumDate={new Date()}
+        onConfirm={setArrivalDate}
+      />
+      <DatePickerSheet
+        ref={departureSheetRef}
+        title="Departure Date"
+        mode="date"
+        minimumDate={arrivalDate ?? new Date()}
+        onConfirm={setCustomDeparture}
+      />
     </SafeAreaView>
   );
 }
