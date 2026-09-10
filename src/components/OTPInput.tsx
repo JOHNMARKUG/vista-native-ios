@@ -1,6 +1,7 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TextInput, View, Text } from 'react-native';
-import Animated, { useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import * as Haptics from 'expo-haptics';
 import { colors } from '../lib/theme';
 
 type Props = {
@@ -47,8 +48,23 @@ export default function OTPInput({ value, onChange, length = 6, autoFocus = true
 }
 
 function Box({ digit, active }: { digit: string; active: boolean }) {
+  const scale = useSharedValue(1);
+  const prevDigit = useRef(digit);
+
+  useEffect(() => {
+    if (digit && !prevDigit.current) {
+      scale.value = withSequence(
+        withSpring(1.2, { damping: 8, stiffness: 450 }),
+        withSpring(1, { damping: 10, stiffness: 300 })
+      );
+      Haptics.selectionAsync().catch(() => {});
+    }
+    prevDigit.current = digit;
+  }, [digit, scale]);
+
   const animatedStyle = useAnimatedStyle(() => ({
     borderColor: withTiming(digit ? colors.navy : active ? colors.navy : colors.border, { duration: 150 }),
+    transform: [{ scale: scale.value }],
   }));
 
   return (
