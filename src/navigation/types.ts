@@ -26,6 +26,8 @@ export type ProfileStackParamList = {
   Profile: undefined;
   Settings: undefined;
   Language: undefined;
+  PaymentMethods: undefined;
+  WebPage: { url: string; title: string };
 };
 
 export type RootTabParamList = {

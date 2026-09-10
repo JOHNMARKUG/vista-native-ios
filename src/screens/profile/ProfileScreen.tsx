@@ -100,7 +100,7 @@ export default function ProfileScreen({ navigation }: Props) {
       <Group>
         <MenuRow icon="person-outline" iconColor={colors.navy} label="Account Settings" onPress={() => navigation.navigate('Settings')} />
         <Divider />
-        <MenuRow icon="card-outline" iconColor={colors.navy} label="Payment Methods" onPress={() => Alert.alert('Coming soon', 'Manage saved payment methods here soon.')} />
+        <MenuRow icon="card-outline" iconColor={colors.navy} label="Payment Methods" onPress={() => navigation.navigate('PaymentMethods')} />
         <Divider />
         <MenuRow icon="language-outline" iconColor={colors.navy} label="Language" onPress={() => navigation.navigate('Language')} />
         <Divider />
@@ -108,14 +108,14 @@ export default function ProfileScreen({ navigation }: Props) {
           icon="shield-checkmark-outline"
           iconColor={colors.navy}
           label="Privacy Policy"
-          onPress={() => Linking.openURL('https://vista-customer.vercel.app/privacy-policy')}
+          onPress={() => navigation.navigate('WebPage', { url: 'https://vista-customer.vercel.app/privacy-policy', title: 'Privacy Policy' })}
         />
         <Divider />
         <MenuRow
           icon="document-text-outline"
           iconColor={colors.navy}
           label="Terms of Service"
-          onPress={() => Linking.openURL('https://vista-customer.vercel.app/terms-of-service')}
+          onPress={() => navigation.navigate('WebPage', { url: 'https://vista-customer.vercel.app/terms-of-service', title: 'Terms of Service' })}
         />
       </Group>
 
