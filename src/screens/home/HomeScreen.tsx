@@ -16,6 +16,7 @@ import NextTripCard from '../../components/NextTripCard';
 import UpcomingEventsRow, { type ChurchEvent } from '../../components/UpcomingEventsRow';
 import type { BookingStatus } from '../../components/StatusBadge';
 import { ACTIVE_STATUSES, RIDE_ICONS, RIDE_LABELS, SERVICE_ICONS, SERVICE_LABELS } from '../../lib/tripCatalog';
+import { toLocalDateString } from '../../lib/date';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
@@ -114,7 +115,7 @@ export default function HomeScreen({ navigation }: Props) {
       supabase
         .from('events')
         .select('*')
-        .gte('event_date', new Date().toISOString().split('T')[0])
+        .gte('event_date', toLocalDateString(new Date()))
         .order('event_date', { ascending: true })
         .limit(3)
         .then(({ data }) => setEvents((data as ChurchEvent[]) ?? []));

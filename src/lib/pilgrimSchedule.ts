@@ -7,6 +7,7 @@
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 import type { Ionicons } from '@expo/vector-icons';
+import { toLocalDateString } from './date';
 
 export type ScheduleIcon = keyof typeof Ionicons.glyphMap;
 
@@ -106,7 +107,7 @@ export function buildSchedule(
       ];
     }
 
-    days.push({ date: date.toISOString().split('T')[0], dateLabel: fmtDate(date), label, items });
+    days.push({ date: toLocalDateString(date), dateLabel: fmtDate(date), label, items });
   }
 
   return days;

@@ -14,6 +14,7 @@ import VISTAInputComp from '../../components/VISTAInput';
 import VISTACardComp from '../../components/VISTACard';
 import SegmentedControl from '../../components/SegmentedControl';
 import BookingSuccess from '../../components/BookingSuccess';
+import { toLocalDateString } from '../../lib/date';
 import { colors, radius, spacing } from '../../lib/theme';
 
 const PAYMENT_METHODS = [
@@ -95,7 +96,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
       const bookingRef = genBookingRef();
       const pickupLocation = direction === 'airport_pickup' ? pickup : pickup || 'Your hotel/residence';
       const dropoffLocation = direction === 'airport_pickup' ? dropoff : 'Entebbe International Airport';
-      const bookingDate = mode === 'now' ? new Date().toISOString().split('T')[0] : date.toISOString().split('T')[0];
+      const bookingDate = toLocalDateString(mode === 'now' ? new Date() : date);
       const bookingTime =
         mode === 'now'
           ? `${String(new Date().getHours()).padStart(2, '0')}:${String(new Date().getMinutes()).padStart(2, '0')}`

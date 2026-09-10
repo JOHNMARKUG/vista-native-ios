@@ -19,6 +19,7 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
 import BookingSuccess from '../../components/BookingSuccess';
+import { toLocalDateString } from '../../lib/date';
 import { colors, radius, spacing } from '../../lib/theme';
 
 type Hotel = { id: string; name: string; area?: string | null };
@@ -64,7 +65,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
       .then(({ data }) => setHotels((data as Hotel[]) ?? []));
   }, []);
 
-  const toISO = (d: Date) => d.toISOString().split('T')[0];
+  const toISO = toLocalDateString;
 
   const departureDateISO = useMemo(() => {
     if (!arrivalDate) return '';

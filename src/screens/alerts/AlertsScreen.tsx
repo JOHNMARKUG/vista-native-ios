@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import VISTAButton from '../../components/VISTAButton';
 import AnimatedPressable from '../../components/AnimatedPressable';
+import { toLocalDateString } from '../../lib/date';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<AlertsStackParamList, 'Alerts'>;
@@ -71,7 +72,7 @@ export default function AlertsScreen({ navigation }: Props) {
     const { data } = await supabase
       .from('events')
       .select('*')
-      .gte('event_date', new Date().toISOString().split('T')[0])
+      .gte('event_date', toLocalDateString(new Date()))
       .order('event_date', { ascending: true })
       .limit(3);
     setEvents((data as ChurchEvent[]) ?? []);
