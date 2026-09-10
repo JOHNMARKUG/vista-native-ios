@@ -18,6 +18,7 @@ import {
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
+import BookingSuccess from '../../components/BookingSuccess';
 import { colors, radius, spacing } from '../../lib/theme';
 
 type Hotel = { id: string; name: string; area?: string | null };
@@ -30,6 +31,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [hotels, setHotels] = useState<Hotel[]>([]);
+  const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   // Step 1 — arrival
   const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
@@ -111,7 +113,12 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
   // headerLeft to call this wizard's own `back()`, and only allow the swipe
   // gesture to exit the screen on step 1 (where "back" already means that).
   useLayoutEffect(() => {
+    if (bookedRef) {
+      navigation.setOptions({ headerShown: false, gestureEnabled: false });
+      return;
+    }
     navigation.setOptions({
+      headerShown: true,
       title: `Step ${step} of ${TOTAL_STEPS}`,
       gestureEnabled: step === 1,
       headerLeft: () => (
@@ -121,7 +128,7 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
       ),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [navigation, step]);
+  }, [navigation, step, bookedRef]);
 
   const handlePay = async () => {
     if (!user || !arrivalDate) return;
@@ -175,15 +182,24 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
         })
         .catch(() => {});
 
-      Alert.alert('Package booked!', `Reference ${bookingRef}. Our team will confirm payment details by WhatsApp.`, [
-        { text: 'View my trips', onPress: () => navigation.getParent()?.goBack() },
-      ]);
+      setBookedRef(bookingRef);
     } catch (err) {
       Alert.alert('Could not submit booking', (err as Error).message ?? 'Please try again.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (bookedRef) {
+    return (
+      <BookingSuccess
+        title="Package booked!"
+        message="Our team will confirm your payment details by WhatsApp shortly."
+        reference={bookedRef}
+        onDone={() => navigation.getParent()?.goBack()}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>

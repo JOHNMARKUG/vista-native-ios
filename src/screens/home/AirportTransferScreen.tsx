@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -13,6 +13,7 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTAInputComp from '../../components/VISTAInput';
 import VISTACardComp from '../../components/VISTACard';
 import SegmentedControl from '../../components/SegmentedControl';
+import BookingSuccess from '../../components/BookingSuccess';
 import { colors, radius, spacing } from '../../lib/theme';
 
 const PAYMENT_METHODS = [
@@ -46,8 +47,13 @@ export default function AirportTransferScreen({ navigation }: Props) {
   const [notes, setNotes] = useState('');
   const [payMethod, setPayMethod] = useState<(typeof PAYMENT_METHODS)[number]['key']>('cash');
   const [submitting, setSubmitting] = useState(false);
+  const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: !bookedRef, gestureEnabled: !bookedRef });
+  }, [navigation, bookedRef]);
 
   const pricing = useMemo(() => {
     const basePerPax = direction === 'airport_pickup' ? prices.airport_pickup : prices.airport_departure;
@@ -148,9 +154,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
         }
       }
 
-      Alert.alert('Booking confirmed', `Reference ${bookingRef}`, [
-        { text: 'View my trips', onPress: () => navigation.getParent()?.goBack() },
-      ]);
+      setBookedRef(bookingRef);
     } catch (err) {
       Alert.alert('Could not submit booking', (err as Error).message ?? 'Please try again.');
     } finally {
@@ -159,6 +163,17 @@ export default function AirportTransferScreen({ navigation }: Props) {
   };
 
   const selectedPaymentLabel = PAYMENT_METHODS.find((p) => p.key === payMethod)?.label ?? 'Choose payment';
+
+  if (bookedRef) {
+    return (
+      <BookingSuccess
+        title="Booking confirmed!"
+        message="Our team will assign a verified driver and confirm the details shortly."
+        reference={bookedRef}
+        onDone={() => navigation.getParent()?.goBack()}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>

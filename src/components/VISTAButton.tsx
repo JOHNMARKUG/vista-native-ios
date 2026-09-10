@@ -1,12 +1,6 @@
 import React from 'react';
-import {
-  ActivityIndicator,
-  Pressable,
-  Text,
-  View,
-  type PressableProps,
-} from 'react-native';
-import * as Haptics from 'expo-haptics';
+import { ActivityIndicator, Text, View, type PressableProps } from 'react-native';
+import AnimatedPressable from './AnimatedPressable';
 import { colors, radius } from '../lib/theme';
 
 type Variant = 'primary' | 'accent' | 'outline' | 'outlineLight' | 'ghost';
@@ -45,35 +39,28 @@ export default function VISTAButton({
   const isDisabled = disabled || loading;
   const style = VARIANT_STYLE[variant];
 
-  const handlePress: PressableProps['onPress'] = (e) => {
-    if (isDisabled) return;
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
-    onPress?.(e);
-  };
-
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityState={{ disabled: isDisabled }}
-      onPress={handlePress}
+      onPress={isDisabled ? undefined : onPress}
       disabled={isDisabled}
+      scaleTo={0.97}
+      haptic={!isDisabled}
       {...rest}
-      style={({ pressed }) => [
-        {
-          height: 52,
-          borderRadius: radius.button,
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'row',
-          gap: 8,
-          paddingHorizontal: 20,
-          width: fullWidth ? '100%' : undefined,
-          backgroundColor: isDisabled ? '#E4E4EA' : style.bg,
-          borderWidth: style.border ? 1.5 : 0,
-          borderColor: style.border,
-          opacity: pressed && !isDisabled ? 0.85 : 1,
-        },
-      ]}
+      style={{
+        height: 52,
+        borderRadius: radius.button,
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexDirection: 'row',
+        gap: 8,
+        paddingHorizontal: 20,
+        width: fullWidth ? '100%' : undefined,
+        backgroundColor: isDisabled ? '#E4E4EA' : style.bg,
+        borderWidth: style.border ? 1.5 : 0,
+        borderColor: style.border,
+      }}
     >
       {loading ? (
         <ActivityIndicator color={style.text} />
@@ -91,6 +78,6 @@ export default function VISTAButton({
           </Text>
         </View>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }

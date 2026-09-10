@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PlatformMap from '../../components/PlatformMap';
@@ -13,6 +13,7 @@ import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
+import BookingSuccess from '../../components/BookingSuccess';
 import { colors, radius, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'VistaRides'>;
@@ -67,8 +68,13 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const [femaleDriver, setFemaleDriver] = useState(false);
   const [payMethod, setPayMethod] = useState<(typeof PAYMENT_METHODS)[number]['key']>('cash');
   const [submitting, setSubmitting] = useState(false);
+  const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({ headerShown: !bookedRef });
+  }, [navigation, bookedRef]);
 
   const vehiclePricing = useMemo(() => {
     const map: Record<VehicleKey, { base: number; perKm: number; min: number }> = {
@@ -190,9 +196,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
         }
       }
 
-      Alert.alert('Ride requested', `Reference ${bookingRef}. Track it from My Trips.`, [
-        { text: 'OK', onPress: () => navigation.getParent()?.goBack() },
-      ]);
+      setBookedRef(bookingRef);
     } catch (err) {
       Alert.alert('Could not book ride', (err as Error).message ?? 'Please try again.');
     } finally {
@@ -201,6 +205,17 @@ export default function VistaRidesScreen({ navigation }: Props) {
   };
 
   const selectedPaymentLabel = PAYMENT_METHODS.find((p) => p.key === payMethod)?.label ?? 'Choose payment';
+
+  if (bookedRef) {
+    return (
+      <BookingSuccess
+        title="Ride requested!"
+        message="We're matching you with a nearby driver — track live progress from My Trips."
+        reference={bookedRef}
+        onDone={() => navigation.getParent()?.goBack()}
+      />
+    );
+  }
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
