@@ -142,10 +142,13 @@ export default function HomeScreen({ navigation }: Props) {
         contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}
       >
         <Animated.View entering={FadeInDown.duration(400)} style={{ marginBottom: spacing.lg }}>
-          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>
-            {greeting}, {firstName}
+          <Text style={{ fontSize: 26, fontWeight: '600', color: colors.textSecondary, lineHeight: 30 }}>
+            {greeting},
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+          <Text style={{ fontSize: 34, fontWeight: '800', color: colors.navy, lineHeight: 39 }}>
+            {firstName}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 8 }}>
             <Ionicons name="location" size={14} color={colors.textSecondary} />
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t('home.locationLabel')}</Text>
           </View>

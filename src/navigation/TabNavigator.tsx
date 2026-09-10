@@ -1,4 +1,5 @@
 import React from 'react';
+import { Image, Text, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { BlurView } from 'expo-blur';
@@ -55,10 +56,36 @@ const pushedHeaderOptions = {
   headerShadowVisible: true,
 };
 
+/**
+ * A compact logotype header just for the Home tab, rather than the large
+ * title used everywhere else — the mark itself does the branding job, so
+ * the big typographic moment happens in-content (the greeting) instead of
+ * being duplicated in the nav bar.
+ */
+function HomeHeaderTitle() {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+      <Image source={require('../../assets/vista-logo.png')} style={{ width: 22, height: 22, resizeMode: 'contain' }} />
+      <Text style={{ fontSize: 17, fontWeight: '800', color: colors.navy, letterSpacing: 0.3 }}>VISTA</Text>
+    </View>
+  );
+}
+
 function HomeStackNavigator() {
   return (
     <HomeStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
-      <HomeStack.Screen name="Home" component={HomeScreen} options={{ title: 'VISTA Transport', ...rootHeaderOptions }} />
+      <HomeStack.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          title: 'VISTA',
+          headerLargeTitle: false,
+          headerTitleAlign: 'left',
+          headerTitle: HomeHeaderTitle,
+          headerShadowVisible: true,
+          headerTintColor: colors.navy,
+        }}
+      />
       <HomeStack.Screen name="PilgrimagePackage" component={PilgrimagePackageScreen} options={{ title: 'Pilgrimage Package', ...pushedHeaderOptions }} />
       <HomeStack.Screen name="VistaRides" component={VistaRidesScreen} options={{ title: 'VISTA Rides', ...pushedHeaderOptions }} />
       <HomeStack.Screen name="AirportTransfer" component={AirportTransferScreen} options={{ title: 'Airport Transfer', ...pushedHeaderOptions }} />
