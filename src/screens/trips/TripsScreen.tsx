@@ -10,6 +10,7 @@ import BookingCard from '../../components/BookingCard';
 import SegmentedControl from '../../components/SegmentedControl';
 import VISTAButton from '../../components/VISTAButton';
 import type { BookingStatus } from '../../components/StatusBadge';
+import { ACTIVE_STATUSES, RIDE_ICONS, RIDE_LABELS, SERVICE_ICONS, SERVICE_LABELS } from '../../lib/tripCatalog';
 import { colors, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'Trips'>;
@@ -43,59 +44,6 @@ type VistaRide = {
 type Trip =
   | { source: 'booking'; data: Booking }
   | { source: 'ride'; data: VistaRide };
-
-const SERVICE_LABELS: Record<string, string> = {
-  airport_pickup: 'Airport Pickup',
-  airport_departure: 'Airport Departure',
-  ministry_transport: 'Ministry Transport',
-  group_convoy: 'Group Convoy',
-  city_transfer: 'City Transfer',
-  vip: 'VIP Service',
-  crusade: 'Crusade Transport',
-  conference: 'Conference Transport',
-};
-
-const RIDE_LABELS: Record<string, string> = {
-  boda: 'VISTA Ride — Boda Boda',
-  standard: 'VISTA Ride — Car',
-  premium: 'VISTA Ride — SUV',
-  intercity: 'VISTA Ride — Intercity',
-  hourly_standard: 'Hourly Hire — Standard',
-  hourly_premium: 'Hourly Hire — Premium',
-};
-
-const SERVICE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  airport_pickup: 'airplane-outline',
-  airport_departure: 'airplane-outline',
-  ministry_transport: 'business-outline',
-  group_convoy: 'people-outline',
-  city_transfer: 'car-outline',
-  vip: 'star-outline',
-  crusade: 'business-outline',
-  conference: 'business-outline',
-};
-
-const RIDE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  boda: 'bicycle-outline',
-  standard: 'car-outline',
-  premium: 'car-sport-outline',
-  intercity: 'trail-sign-outline',
-  hourly_standard: 'time-outline',
-  hourly_premium: 'time-outline',
-};
-
-const ACTIVE_STATUSES: BookingStatus[] = [
-  'pending',
-  'pending_payment',
-  'searching',
-  'scheduled',
-  'confirmed',
-  'driver_assigned',
-  'en_route',
-  'driver_arrived',
-  'arrived',
-  'in_progress',
-];
 
 const TABS = [
   { key: 'all', label: 'All' },

@@ -1,17 +1,45 @@
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import Animated, { FadeIn, FadeInDown, SlideInDown } from 'react-native-reanimated';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { HomeStackParamList, RootTabParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { supabase } from '../../lib/supabase';
 import ServiceCard from '../../components/ServiceCard';
 import VISTAButton from '../../components/VISTAButton';
 import AnimatedPressable from '../../components/AnimatedPressable';
+import NextTripCard from '../../components/NextTripCard';
+import type { BookingStatus } from '../../components/StatusBadge';
+import { ACTIVE_STATUSES, RIDE_ICONS, RIDE_LABELS, SERVICE_ICONS, SERVICE_LABELS } from '../../lib/tripCatalog';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
+
+const STATUS_PRIORITY: Record<BookingStatus, number> = {
+  driver_arrived: 0,
+  arrived: 0,
+  en_route: 1,
+  driver_assigned: 2,
+  in_progress: 2,
+  confirmed: 3,
+  scheduled: 4,
+  searching: 5,
+  pending: 6,
+  pending_payment: 6,
+  completed: 9,
+  cancelled: 9,
+};
+
+type NextTrip = {
+  icon: keyof typeof Ionicons.glyphMap;
+  title: string;
+  reference: string;
+  status: BookingStatus;
+};
 
 const WHATSAPP_NUMBER = '256785585703';
 
@@ -19,10 +47,65 @@ export default function HomeScreen({ navigation }: Props) {
   const { t } = useTranslation();
   const { user, profile, exitGuestMode } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+  const [nextTrip, setNextTrip] = useState<NextTrip | null>(null);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? t('home.goodMorning') : hour < 17 ? t('home.goodAfternoon') : t('home.goodEvening');
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) {
+        setNextTrip(null);
+        return;
+      }
+      (async () => {
+        const [{ data: bookings }, { data: rides }] = await Promise.all([
+          supabase
+            .from('bookings')
+            .select('booking_ref, service_type, status, created_at')
+            .eq('customer_id', user.id)
+            .in('status', ACTIVE_STATUSES)
+            .order('created_at', { ascending: false })
+            .limit(1),
+          supabase
+            .from('vista_rides')
+            .select('booking_ref, ride_type, status, created_at')
+            .eq('customer_id', user.id)
+            .in('status', ACTIVE_STATUSES)
+            .order('created_at', { ascending: false })
+            .limit(1),
+        ]);
+
+        const candidates = [
+          ...(bookings ?? []).map((b) => ({
+            trip: {
+              icon: SERVICE_ICONS[b.service_type] ?? ('car-outline' as const),
+              title: SERVICE_LABELS[b.service_type] ?? b.service_type,
+              reference: b.booking_ref,
+              status: b.status as BookingStatus,
+            },
+            priority: STATUS_PRIORITY[b.status as BookingStatus] ?? 8,
+            createdAt: b.created_at,
+          })),
+          ...(rides ?? []).map((r) => ({
+            trip: {
+              icon: RIDE_ICONS[r.ride_type] ?? ('car-outline' as const),
+              title: RIDE_LABELS[r.ride_type] ?? 'VISTA Ride',
+              reference: r.booking_ref,
+              status: r.status as BookingStatus,
+            },
+            priority: STATUS_PRIORITY[r.status as BookingStatus] ?? 8,
+            createdAt: r.created_at,
+          })),
+        ];
+        candidates.sort(
+          (a, b) => a.priority - b.priority || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        setNextTrip(candidates[0]?.trip ?? null);
+      })();
+    }, [user])
+  );
 
   const requireAuth = (action: () => void) => {
     if (!user) {
@@ -53,6 +136,18 @@ export default function HomeScreen({ navigation }: Props) {
             <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t('home.locationLabel')}</Text>
           </View>
         </Animated.View>
+
+        {nextTrip && (
+          <View style={{ marginBottom: spacing.lg }}>
+            <NextTripCard
+              icon={nextTrip.icon}
+              title={nextTrip.title}
+              reference={nextTrip.reference}
+              status={nextTrip.status}
+              onPress={() => navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('TripsTab')}
+            />
+          </View>
+        )}
 
         <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm }}>
           {t('home.services')}
