@@ -58,6 +58,10 @@ export default function LoginScreen({ navigation }: Props) {
 
   const [request, response, promptAsync] = Google.useAuthRequest({
     iosClientId: GOOGLE_IOS_CLIENT_ID,
+    // Only exercised in the web dev preview (Platform.select falls through to
+    // 'webClientId' there) — the shipped app is iOS-only, so this never
+    // needs to be a real, separately-registered web OAuth client.
+    webClientId: GOOGLE_IOS_CLIENT_ID,
     redirectUri,
   });
 

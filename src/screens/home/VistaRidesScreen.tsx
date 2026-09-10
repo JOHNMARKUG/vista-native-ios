@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps';
+import PlatformMap from '../../components/PlatformMap';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
@@ -205,7 +205,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
       <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: radius.card, overflow: 'hidden' }}>
-        <MapView
+        <PlatformMap
           style={{ flex: 1 }}
           initialRegion={{
             latitude: pickupCoords?.lat ?? 0.3476,
@@ -218,10 +218,11 @@ export default function VistaRidesScreen({ navigation }: Props) {
               ? { latitude: pickupCoords.lat, longitude: pickupCoords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
               : undefined
           }
-        >
-          {pickupCoords && <Marker coordinate={{ latitude: pickupCoords.lat, longitude: pickupCoords.lng }} pinColor={colors.gold} title="Pickup" />}
-          {dropoffCoords && <Marker coordinate={{ latitude: dropoffCoords.lat, longitude: dropoffCoords.lng }} pinColor={colors.navy} title="Drop-off" />}
-        </MapView>
+          markers={[
+            ...(pickupCoords ? [{ id: 'pickup', latitude: pickupCoords.lat, longitude: pickupCoords.lng, pinColor: colors.gold, title: 'Pickup' }] : []),
+            ...(dropoffCoords ? [{ id: 'dropoff', latitude: dropoffCoords.lat, longitude: dropoffCoords.lng, pinColor: colors.navy, title: 'Drop-off' }] : []),
+          ]}
+        />
       </View>
 
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">

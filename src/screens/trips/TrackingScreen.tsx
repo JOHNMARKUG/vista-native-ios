@@ -1,12 +1,12 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TripsStackParamList } from '../../navigation/types';
 import { supabase } from '../../lib/supabase';
+import PlatformMap from '../../components/PlatformMap';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'Tracking'>;
@@ -84,7 +84,7 @@ export default function TrackingScreen({ route }: Props) {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
       <View style={{ flex: 1, margin: spacing.md, borderRadius: radius.card, overflow: 'hidden' }}>
-        <MapView
+        <PlatformMap
           style={{ flex: 1 }}
           initialRegion={{
             latitude: pickupCoords?.lat ?? driver?.current_latitude ?? 0.3476,
@@ -92,26 +92,25 @@ export default function TrackingScreen({ route }: Props) {
             latitudeDelta: 0.05,
             longitudeDelta: 0.05,
           }}
-        >
-          {pickupCoords && <Marker coordinate={{ latitude: pickupCoords.lat, longitude: pickupCoords.lng }} pinColor={colors.gold} title="Pickup" />}
-          {hasDriverLocation && (
-            <Marker
-              coordinate={{ latitude: driver!.current_latitude!, longitude: driver!.current_longitude! }}
-              pinColor={colors.navy}
-              title={driver?.full_name ?? 'Driver'}
-            />
-          )}
-          {hasDriverLocation && pickupCoords && (
-            <Polyline
-              coordinates={[
-                { latitude: driver!.current_latitude!, longitude: driver!.current_longitude! },
-                { latitude: pickupCoords.lat, longitude: pickupCoords.lng },
-              ]}
-              strokeColor={colors.navy}
-              strokeWidth={3}
-            />
-          )}
-        </MapView>
+          markers={[
+            ...(pickupCoords ? [{ id: 'pickup', latitude: pickupCoords.lat, longitude: pickupCoords.lng, pinColor: colors.gold, title: 'Pickup' }] : []),
+            ...(hasDriverLocation
+              ? [{ id: 'driver', latitude: driver!.current_latitude!, longitude: driver!.current_longitude!, pinColor: colors.navy, title: driver?.full_name ?? 'Driver' }]
+              : []),
+          ]}
+          polyline={
+            hasDriverLocation && pickupCoords
+              ? {
+                  coordinates: [
+                    { latitude: driver!.current_latitude!, longitude: driver!.current_longitude! },
+                    { latitude: pickupCoords.lat, longitude: pickupCoords.lng },
+                  ],
+                  strokeColor: colors.navy,
+                  strokeWidth: 3,
+                }
+              : undefined
+          }
+        />
       </View>
 
       <View style={{ padding: spacing.md }}>
