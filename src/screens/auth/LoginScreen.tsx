@@ -172,7 +172,6 @@ export default function LoginScreen({ navigation }: Props) {
               returnKeyType="send"
               onSubmitEditing={handleSubmit(onSubmit)}
               error={errors.email?.message ?? serverError ?? undefined}
-              restingBorderColor={colors.navy}
               leftIcon={<Ionicons name="mail-outline" size={18} color={colors.navy} />}
             />
           )}

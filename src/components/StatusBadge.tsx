@@ -18,20 +18,21 @@ export type BookingStatus =
 
 // Restricted to navy / gold / success / error / neutral — no secondary
 // accent hues. Waiting states read gold, active states read navy,
-// terminal states read success or error.
-const CONFIG: Record<BookingStatus, { fg: string; label: string }> = {
-  pending: { fg: colors.gold, label: 'Pending' },
-  pending_payment: { fg: colors.gold, label: 'Payment Pending' },
-  searching: { fg: colors.gold, label: 'Finding Driver' },
-  scheduled: { fg: colors.navy, label: 'Scheduled' },
-  confirmed: { fg: colors.navy, label: 'Confirmed' },
-  driver_assigned: { fg: colors.navy, label: 'Driver Assigned' },
-  en_route: { fg: colors.navy, label: 'On The Way' },
-  driver_arrived: { fg: colors.gold, label: 'Driver Arrived' },
-  arrived: { fg: colors.gold, label: 'Driver Arrived' },
-  in_progress: { fg: colors.navy, label: 'In Progress' },
-  completed: { fg: colors.success, label: 'Completed' },
-  cancelled: { fg: colors.error, label: 'Cancelled' },
+// terminal states read success or error. Filled tint, not an outline —
+// matches how iOS's own tag/pill chips (Calendar, Reminders) read.
+const CONFIG: Record<BookingStatus, { fg: string; bg: string; label: string }> = {
+  pending: { fg: '#8A6413', bg: '#FBF0DA', label: 'Pending' },
+  pending_payment: { fg: '#8A6413', bg: '#FBF0DA', label: 'Payment Pending' },
+  searching: { fg: '#8A6413', bg: '#FBF0DA', label: 'Finding Driver' },
+  scheduled: { fg: colors.navy, bg: '#E7ECFB', label: 'Scheduled' },
+  confirmed: { fg: colors.navy, bg: '#E7ECFB', label: 'Confirmed' },
+  driver_assigned: { fg: colors.navy, bg: '#E7ECFB', label: 'Driver Assigned' },
+  en_route: { fg: colors.navy, bg: '#E7ECFB', label: 'On The Way' },
+  driver_arrived: { fg: '#8A6413', bg: '#FBF0DA', label: 'Driver Arrived' },
+  arrived: { fg: '#8A6413', bg: '#FBF0DA', label: 'Driver Arrived' },
+  in_progress: { fg: colors.navy, bg: '#E7ECFB', label: 'In Progress' },
+  completed: { fg: '#1E8E3E', bg: '#DFF6E4', label: 'Completed' },
+  cancelled: { fg: '#B42318', bg: '#FDE3E1', label: 'Cancelled' },
 };
 
 export default function StatusBadge({ status, label }: { status: BookingStatus; label?: string }) {
@@ -43,10 +44,9 @@ export default function StatusBadge({ status, label }: { status: BookingStatus; 
         alignItems: 'center',
         gap: 6,
         alignSelf: 'flex-start',
-        borderWidth: 1,
-        borderColor: cfg.fg,
+        backgroundColor: cfg.bg,
         borderRadius: radius.tag,
-        paddingVertical: 3,
+        paddingVertical: 4,
         paddingHorizontal: 8,
       }}
     >

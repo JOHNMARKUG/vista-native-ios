@@ -13,7 +13,7 @@ import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import VISTAInput from '../../components/VISTAInput';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'VistaRides'>;
 type VehicleKey = 'boda' | 'standard' | 'premium' | 'intercity';
@@ -203,17 +203,8 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const selectedPaymentLabel = PAYMENT_METHODS.find((p) => p.key === payMethod)?.label ?? 'Choose payment';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 }}>
-          <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary }}>VISTA Rides</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: 8, overflow: 'hidden' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
+      <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: radius.card, overflow: 'hidden' }}>
         <MapView
           style={{ flex: 1 }}
           initialRegion={{

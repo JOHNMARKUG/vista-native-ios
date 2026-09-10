@@ -1,6 +1,5 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -69,10 +68,12 @@ export default function TripDetailScreen({ route, navigation }: Props) {
     };
   }, [id, table, fetchTrip]);
 
+  useLayoutEffect(() => {
+    if (trip?.booking_ref) navigation.setOptions({ title: trip.booking_ref });
+  }, [navigation, trip?.booking_ref]);
+
   if (!trip) {
-    return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} />
-    );
+    return <View style={{ flex: 1, backgroundColor: '#FFFFFF' }} />;
   }
 
   const status: BookingStatus = trip.status;
@@ -106,16 +107,11 @@ export default function TripDetailScreen({ route, navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 }}>
-          <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.textSecondary }}>{trip.booking_ref}</Text>
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }}>
+    <ScrollView
+      style={{ backgroundColor: '#FFFFFF' }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }}
+    >
         <View>
           <Text style={{ fontSize: 20, fontWeight: '800', color: colors.navy, marginBottom: 8 }}>
             {source === 'booking' ? trip.service_type?.replace(/_/g, ' ') : trip.ride_type?.replace(/_/g, ' ')}
@@ -194,7 +190,6 @@ export default function TripDetailScreen({ route, navigation }: Props) {
           <VISTAButton title={cancelling ? 'Cancelling...' : 'Cancel Trip'} variant="outline" loading={cancelling} onPress={handleCancel} />
         )}
       </ScrollView>
-    </SafeAreaView>
   );
 }
 

@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,11 +7,12 @@ import type { ProfileStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import { SUPPORTED_LANGUAGES, type SupportedLanguage } from '../../lib/i18n';
-import VISTAHeader from '../../components/VISTAHeader';
 import VISTACard from '../../components/VISTACard';
 import { colors, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Language'>;
+
+const GROUPED_BG = '#F2F2F7';
 
 const LANGUAGE_LABELS: Record<SupportedLanguage, { name: string; native: string; dbValue: string }> = {
   en: { name: 'English', native: 'English', dbValue: 'English' },
@@ -20,7 +20,7 @@ const LANGUAGE_LABELS: Record<SupportedLanguage, { name: string; native: string;
   es: { name: 'Spanish', native: 'Español', dbValue: 'Spanish' },
 };
 
-export default function LanguageScreen({ navigation }: Props) {
+export default function LanguageScreen() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const [selected, setSelected] = useState(i18n.language as SupportedLanguage);
@@ -34,28 +34,29 @@ export default function LanguageScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['bottom']}>
-      <VISTAHeader title={t('language.title')} onBack={() => navigation.goBack()} />
-      <View style={{ padding: spacing.md, gap: spacing.md }}>
-        <Text style={{ fontSize: 13, color: colors.textSecondary }}>{t('language.subtitle')}</Text>
-        <VISTACard style={{ padding: 0 }}>
-          {SUPPORTED_LANGUAGES.map((code, i) => (
-            <React.Fragment key={code}>
-              <Pressable
-                onPress={() => selectLanguage(code)}
-                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 16, paddingHorizontal: spacing.md }}
-              >
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 16, fontWeight: '600', color: colors.textPrimary }}>{LANGUAGE_LABELS[code].native}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{LANGUAGE_LABELS[code].name}</Text>
-                </View>
-                {selected === code && <Ionicons name="checkmark-circle" size={22} color={colors.navy} />}
-              </Pressable>
-              {i < SUPPORTED_LANGUAGES.length - 1 && <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing.md }} />}
-            </React.Fragment>
-          ))}
-        </VISTACard>
-      </View>
-    </SafeAreaView>
+    <ScrollView
+      style={{ backgroundColor: GROUPED_BG }}
+      contentInsetAdjustmentBehavior="automatic"
+      contentContainerStyle={{ padding: spacing.md, gap: spacing.sm }}
+    >
+      <Text style={{ fontSize: 13, color: colors.textSecondary, marginBottom: spacing.xs }}>{t('language.subtitle')}</Text>
+      <VISTACard style={{ padding: 0 }}>
+        {SUPPORTED_LANGUAGES.map((code, i) => (
+          <React.Fragment key={code}>
+            <Pressable
+              onPress={() => selectLanguage(code)}
+              style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 14, paddingHorizontal: spacing.md, minHeight: 48 }}
+            >
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 16, fontWeight: '500', color: colors.textPrimary }}>{LANGUAGE_LABELS[code].native}</Text>
+                <Text style={{ fontSize: 12, color: colors.textSecondary }}>{LANGUAGE_LABELS[code].name}</Text>
+              </View>
+              {selected === code && <Ionicons name="checkmark" size={22} color={colors.navy} />}
+            </Pressable>
+            {i < SUPPORTED_LANGUAGES.length - 1 && <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing.md }} />}
+          </React.Fragment>
+        ))}
+      </VISTACard>
+    </ScrollView>
   );
 }

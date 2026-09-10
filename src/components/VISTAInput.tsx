@@ -6,22 +6,22 @@ type Props = TextInputProps & {
   label?: string;
   error?: string;
   leftIcon?: React.ReactNode;
-  /** Resting (unfocused, no error) border color. Defaults to the standard gray. */
-  restingBorderColor?: string;
 };
 
 /**
- * The input box is always a white surface, on every screen — so its text
- * color is intentionally NOT overridable through the `style` prop. A caller
- * once passed `style={{ color: '#FFFFFF' }}` intending to theme the screen
- * around it, which rendered invisible white text on this white box. Layout
- * tweaks from `style` still apply; `color` always resolves to black (or red
- * for an error) regardless of what's passed in.
+ * Filled system-gray field at rest (no border — Apple's own forms rarely
+ * outline a field until it's active), a navy ring on focus, a red one on
+ * error. The input box is always a light/white surface regardless of the
+ * screen behind it, so its text color is intentionally NOT overridable
+ * through the `style` prop — a caller once passed `style={{ color:
+ * '#FFFFFF' }}` intending to theme the screen around it, which rendered
+ * invisible white text on this surface. Layout tweaks from `style` still
+ * apply; `color` always resolves to black (or red for an error).
  */
 const VISTAInput = forwardRef<TextInput, Props>(
-  ({ label, error, leftIcon, style, restingBorderColor, onFocus, onBlur, ...rest }, ref) => {
+  ({ label, error, leftIcon, style, onFocus, onBlur, ...rest }, ref) => {
     const [focused, setFocused] = useState(false);
-    const borderColor = error ? colors.error : focused ? colors.navy : restingBorderColor ?? colors.border;
+    const active = focused || !!error;
 
     return (
       <View style={{ gap: 6 }}>
@@ -34,9 +34,9 @@ const VISTAInput = forwardRef<TextInput, Props>(
           style={{
             height: 52,
             borderRadius: radius.input,
-            backgroundColor: colors.card,
-            borderWidth: 1,
-            borderColor,
+            backgroundColor: active ? colors.card : '#F2F2F7',
+            borderWidth: active ? 1.5 : 0,
+            borderColor: error ? colors.error : colors.navy,
             flexDirection: 'row',
             alignItems: 'center',
             paddingHorizontal: 16,

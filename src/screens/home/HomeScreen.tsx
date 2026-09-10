@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,7 +7,7 @@ import type { HomeStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import ServiceCard from '../../components/ServiceCard';
 import VISTAButton from '../../components/VISTAButton';
-import { colors, radius, spacing } from '../../lib/theme';
+import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -38,31 +37,22 @@ export default function HomeScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <SafeAreaView edges={['top']} style={{ backgroundColor: colors.navy }}>
-        <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.lg, paddingTop: spacing.sm }}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: '#FFFFFF', fontSize: 22, fontWeight: '700' }}>
-                {greeting}, {firstName}
-              </Text>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6 }}>
-                <Ionicons name="location" size={14} color={colors.gold} />
-                <Text style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13 }}>{t('home.locationLabel')}</Text>
-              </View>
-            </View>
-            <Pressable
-              onPress={() => navigation.getParent()?.navigate('AlertsTab' as never)}
-              hitSlop={10}
-              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: 'rgba(255,255,255,0.12)', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <Ionicons name="notifications-outline" size={20} color="#FFFFFF" />
-            </Pressable>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}
+      >
+        <View style={{ marginBottom: spacing.lg }}>
+          <Text style={{ fontSize: 20, fontWeight: '700', color: colors.textPrimary }}>
+            {greeting}, {firstName}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+            <Ionicons name="location" size={14} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 13 }}>{t('home.locationLabel')}</Text>
           </View>
         </View>
-      </SafeAreaView>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ padding: spacing.md, paddingBottom: 110 }}>
-        <Text style={{ fontSize: 16, fontWeight: '700', color: colors.navy, marginBottom: spacing.sm }}>
+        <Text style={{ fontSize: 13, fontWeight: '600', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: spacing.sm }}>
           {t('home.services')}
         </Text>
 
@@ -113,16 +103,19 @@ export default function HomeScreen({ navigation }: Props) {
 
         <Pressable
           onPress={openWhatsApp}
-          style={{
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: spacing.md,
-            marginTop: spacing.lg,
-            padding: spacing.md,
-            borderRadius: radius.card,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
+          style={({ pressed }) => [
+            {
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: spacing.md,
+              marginTop: spacing.lg,
+              padding: spacing.md,
+              borderRadius: radius.card,
+              backgroundColor: colors.card,
+              opacity: pressed ? 0.9 : 1,
+            },
+            shadows.card,
+          ]}
         >
           <Ionicons name="logo-whatsapp" size={22} color={colors.textSecondary} />
           <View style={{ flex: 1 }}>

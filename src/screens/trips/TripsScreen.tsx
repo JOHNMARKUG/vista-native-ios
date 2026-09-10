@@ -1,6 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from '@react-navigation/native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -8,9 +7,10 @@ import type { TripsStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
 import { supabase } from '../../lib/supabase';
 import BookingCard from '../../components/BookingCard';
+import SegmentedControl from '../../components/SegmentedControl';
 import VISTAButton from '../../components/VISTAButton';
 import type { BookingStatus } from '../../components/StatusBadge';
-import { colors, radius, spacing } from '../../lib/theme';
+import { colors, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'Trips'>;
 
@@ -102,12 +102,13 @@ const TABS = [
   { key: 'active', label: 'Active' },
   { key: 'completed', label: 'Completed' },
 ] as const;
+type TabKey = (typeof TABS)[number]['key'];
 
 export default function TripsScreen({ navigation }: Props) {
   const { user, isGuest, exitGuestMode } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [rides, setRides] = useState<VistaRide[]>([]);
-  const [tab, setTab] = useState<(typeof TABS)[number]['key']>('all');
+  const [tab, setTab] = useState<TabKey>('all');
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -167,47 +168,22 @@ export default function TripsScreen({ navigation }: Props) {
 
   if (isGuest && !user) {
     return (
-      <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-        <Header count={0} />
-        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
-          <Text style={{ fontSize: 16, fontWeight: '600', color: colors.navy }}>Sign in to view your trips</Text>
-          <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
-            Sign in to see your booking history and track active rides.
-          </Text>
-          <VISTAButton title="Sign In" variant="accent" fullWidth={false} onPress={exitGuestMode} />
-        </View>
-      </SafeAreaView>
+      <View style={{ flex: 1, backgroundColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
+        <Text style={{ fontSize: 16, fontWeight: '600', color: colors.navy }}>Sign in to view your trips</Text>
+        <Text style={{ fontSize: 13, color: colors.textSecondary, textAlign: 'center' }}>
+          Sign in to see your booking history and track active rides.
+        </Text>
+        <VISTAButton title="Sign In" variant="accent" fullWidth={false} onPress={exitGuestMode} />
+      </View>
     );
   }
 
   const arrivedBooking = bookings.find((b) => b.status === 'driver_arrived');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['top']}>
-      <Header count={bookings.length + rides.length} />
-
-      <View style={{ flexDirection: 'row', paddingHorizontal: spacing.md, gap: 8, paddingVertical: spacing.sm }}>
-        {TABS.map((t) => (
-          <Text
-            key={t.key}
-            onPress={() => setTab(t.key)}
-            style={{
-              fontSize: 13,
-              fontWeight: '600',
-              color: tab === t.key ? '#FFFFFF' : colors.textSecondary,
-              backgroundColor: tab === t.key ? colors.navy : colors.card,
-              borderWidth: 1,
-              borderColor: tab === t.key ? colors.navy : colors.border,
-              borderRadius: radius.tag,
-              paddingVertical: 8,
-              paddingHorizontal: 18,
-              overflow: 'hidden',
-              textAlign: 'center',
-            }}
-          >
-            {t.label}
-          </Text>
-        ))}
+    <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+      <View style={{ padding: spacing.md, paddingBottom: spacing.sm }}>
+        <SegmentedControl segments={TABS} value={tab} onChange={setTab} />
       </View>
 
       {arrivedBooking && (
@@ -221,6 +197,7 @@ export default function TripsScreen({ navigation }: Props) {
       )}
 
       <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
       >
@@ -265,17 +242,6 @@ export default function TripsScreen({ navigation }: Props) {
           )
         )}
       </ScrollView>
-    </SafeAreaView>
-  );
-}
-
-function Header({ count }: { count: number }) {
-  return (
-    <View style={{ backgroundColor: colors.navy, paddingHorizontal: spacing.md, paddingVertical: spacing.md }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Text style={{ fontSize: 22, fontWeight: '700', color: '#FFFFFF' }}>My Trips</Text>
-        <Text style={{ fontSize: 12, fontWeight: '600', color: colors.gold }}>{count} bookings</Text>
-      </View>
     </View>
   );
 }

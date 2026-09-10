@@ -12,7 +12,8 @@ import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
 import VISTAInputComp from '../../components/VISTAInput';
 import VISTACardComp from '../../components/VISTACard';
-import { colors, spacing } from '../../lib/theme';
+import SegmentedControl from '../../components/SegmentedControl';
+import { colors, radius, spacing } from '../../lib/theme';
 
 const PAYMENT_METHODS = [
   { key: 'mtn', label: 'MTN Mobile Money', icon: 'phone-portrait-outline' },
@@ -160,21 +161,20 @@ export default function AirportTransferScreen({ navigation }: Props) {
   const selectedPaymentLabel = PAYMENT_METHODS.find((p) => p.key === payMethod)?.label ?? 'Choose payment';
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 }}>
-          <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary }}>Airport Transfer</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <DirectionTab label="Airport Pickup" active={direction === 'airport_pickup'} onPress={() => setDirection('airport_pickup')} />
-          <DirectionTab label="Airport Departure" active={direction === 'airport_departure'} onPress={() => setDirection('airport_departure')} />
-        </View>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <SegmentedControl
+          segments={[
+            { key: 'airport_pickup', label: 'Airport Pickup' },
+            { key: 'airport_departure', label: 'Airport Departure' },
+          ]}
+          value={direction}
+          onChange={setDirection}
+        />
 
         <VISTACardComp style={{ gap: spacing.sm }}>
           <VISTAInputComp label="Pickup" value={pickup} onChangeText={setPickup} editable={direction === 'airport_departure'} />
@@ -186,10 +186,14 @@ export default function AirportTransferScreen({ navigation }: Props) {
           />
         </VISTACardComp>
 
-        <View style={{ flexDirection: 'row', gap: 8 }}>
-          <DirectionTab label="Book for now" active={mode === 'now'} onPress={() => setMode('now')} />
-          <DirectionTab label="Schedule" active={mode === 'later'} onPress={() => setMode('later')} />
-        </View>
+        <SegmentedControl
+          segments={[
+            { key: 'now', label: 'Book for now' },
+            { key: 'later', label: 'Schedule' },
+          ]}
+          value={mode}
+          onChange={setMode}
+        />
         {mode === 'later' && (
           <Pressable onPress={() => setShowDatePicker(true)}>
             <VISTACardComp>
@@ -278,24 +282,5 @@ export default function AirportTransferScreen({ navigation }: Props) {
         </BottomSheetView>
       </BottomSheetModal>
     </SafeAreaView>
-  );
-}
-
-function DirectionTab({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={{
-        flex: 1,
-        paddingVertical: 10,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: active ? colors.navy : colors.border,
-        alignItems: 'center',
-        backgroundColor: active ? colors.navy : colors.card,
-      }}
-    >
-      <Text style={{ fontSize: 13, fontWeight: '600', color: active ? '#FFFFFF' : colors.textSecondary }}>{label}</Text>
-    </Pressable>
   );
 }

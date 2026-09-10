@@ -165,7 +165,6 @@ export default function CompleteProfileScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   autoComplete="given-name"
-                  restingBorderColor={colors.navy}
                   error={errors.first_name?.message}
                 />
               )}
@@ -180,7 +179,6 @@ export default function CompleteProfileScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   autoComplete="family-name"
-                  restingBorderColor={colors.navy}
                   error={errors.last_name?.message}
                 />
               )}
@@ -198,7 +196,6 @@ export default function CompleteProfileScreen() {
                   onChangeText={(v) => onChange(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
                   onBlur={onBlur}
                   autoCapitalize="characters"
-                  restingBorderColor={colors.navy}
                   style={{ letterSpacing: 1 }}
                 />
               )}
@@ -223,7 +220,6 @@ export default function CompleteProfileScreen() {
                   onBlur={onBlur}
                   keyboardType="phone-pad"
                   autoComplete="tel"
-                  restingBorderColor={colors.navy}
                   style={{ fontSize: 20 }}
                   error={errors.phone?.message}
                 />
@@ -250,7 +246,6 @@ export default function CompleteProfileScreen() {
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
-                  restingBorderColor={colors.navy}
                 />
               )}
             />
@@ -264,7 +259,6 @@ export default function CompleteProfileScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   keyboardType="phone-pad"
-                  restingBorderColor={colors.navy}
                 />
               )}
             />

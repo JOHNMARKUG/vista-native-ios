@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -106,6 +106,23 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
   };
   const next = () => canNext() && setStep((s) => Math.min(TOTAL_STEPS, s + 1));
 
+  // The native header's back button and swipe gesture would otherwise leave
+  // the whole booking flow instead of stepping back one page — override
+  // headerLeft to call this wizard's own `back()`, and only allow the swipe
+  // gesture to exit the screen on step 1 (where "back" already means that).
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      title: `Step ${step} of ${TOTAL_STEPS}`,
+      gestureEnabled: step === 1,
+      headerLeft: () => (
+        <Pressable onPress={back} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <Ionicons name="chevron-back" size={24} color={colors.navy} />
+        </Pressable>
+      ),
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [navigation, step]);
+
   const handlePay = async () => {
     if (!user || !arrivalDate) return;
     setSubmitting(true);
@@ -169,18 +186,12 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-        <Pressable onPress={back} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, alignSelf: 'flex-start' }}>
-          <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        <Text style={{ color: colors.textSecondary, fontSize: 11, fontWeight: '600', letterSpacing: 1, textTransform: 'uppercase' }}>
-          Step {step} of {TOTAL_STEPS}
-        </Text>
-      </View>
-
-      <ScrollView contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }} keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
+      <ScrollView
+        contentInsetAdjustmentBehavior="automatic"
+        contentContainerStyle={{ padding: spacing.md, paddingBottom: spacing.xxl, gap: spacing.md }}
+        keyboardShouldPersistTaps="handled"
+      >
         {step === 1 && (
           <>
             <Text style={styles.title}>When do you arrive?</Text>

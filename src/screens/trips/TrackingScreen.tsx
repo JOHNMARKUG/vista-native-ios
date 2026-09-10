@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import MapView, { Marker, Polyline } from 'react-native-maps';
 import * as Location from 'expo-location';
@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { TripsStackParamList } from '../../navigation/types';
 import { supabase } from '../../lib/supabase';
-import { colors, spacing } from '../../lib/theme';
+import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'Tracking'>;
 
@@ -29,7 +29,7 @@ function haversineKm(a: { lat: number; lng: number }, b: { lat: number; lng: num
   return R * 2 * Math.atan2(Math.sqrt(s), Math.sqrt(1 - s));
 }
 
-export default function TrackingScreen({ route, navigation }: Props) {
+export default function TrackingScreen({ route }: Props) {
   const { id, source } = route.params;
   const table = source === 'booking' ? 'bookings' : 'vista_rides';
 
@@ -82,17 +82,8 @@ export default function TrackingScreen({ route, navigation }: Props) {
   const hasDriverLocation = driver?.current_latitude && driver?.current_longitude && driver.is_online;
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: colors.background }} edges={['top', 'bottom']}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: spacing.md, paddingTop: spacing.sm }}>
-        <Pressable onPress={() => navigation.goBack()} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8 }}>
-          <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '600' }}>Back</Text>
-        </Pressable>
-        <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary }}>Live Tracking</Text>
-        <View style={{ width: 50 }} />
-      </View>
-
-      <View style={{ flex: 1, margin: spacing.md, borderRadius: 8, overflow: 'hidden' }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
+      <View style={{ flex: 1, margin: spacing.md, borderRadius: radius.card, overflow: 'hidden' }}>
         <MapView
           style={{ flex: 1 }}
           initialRegion={{
@@ -125,17 +116,17 @@ export default function TrackingScreen({ route, navigation }: Props) {
 
       <View style={{ padding: spacing.md }}>
         {hasDriverLocation ? (
-          <View style={{ backgroundColor: colors.card, borderRadius: 8, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+          <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12 }, shadows.card]}>
             <Ionicons name="car" size={26} color={colors.navy} />
             <View>
-              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.navy }}>Your driver is on the way</Text>
-              <Text style={{ fontSize: 15, fontWeight: '800', color: colors.navy }}>
+              <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>Your driver is on the way</Text>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>
                 {etaMinutes != null ? `Arriving in ~${etaMinutes} min` : 'Calculating arrival time...'}
               </Text>
             </View>
           </View>
         ) : (
-          <View style={{ backgroundColor: colors.card, borderRadius: 8, padding: 16 }}>
+          <View style={[{ backgroundColor: colors.card, borderRadius: radius.card, padding: 16 }, shadows.card]}>
             <Text style={{ fontSize: 13, color: colors.textSecondary }}>
               Waiting for your driver's live location to come online.
             </Text>

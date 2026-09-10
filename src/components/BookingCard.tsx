@@ -38,8 +38,6 @@ export default function BookingCard({
         {
           backgroundColor: colors.card,
           borderRadius: radius.card,
-          borderWidth: 1,
-          borderColor: colors.border,
           padding: 16,
           gap: 10,
           opacity: pressed ? 0.9 : 1,
@@ -99,10 +97,9 @@ export default function BookingCard({
                 flexDirection: 'row',
                 alignItems: 'center',
                 gap: 5,
-                borderWidth: 1,
-                borderColor: colors.navy,
+                backgroundColor: '#E7ECFB',
                 borderRadius: radius.tag,
-                paddingVertical: 3,
+                paddingVertical: 4,
                 paddingHorizontal: 8,
               }}
             >

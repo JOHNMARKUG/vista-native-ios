@@ -18,6 +18,10 @@ export type TripsStackParamList = {
   Tracking: { id: string; source: 'booking' | 'ride' };
 };
 
+export type AlertsStackParamList = {
+  Alerts: undefined;
+};
+
 export type ProfileStackParamList = {
   Profile: undefined;
   Settings: undefined;

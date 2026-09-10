@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 import type {
+  AlertsStackParamList,
   HomeStackParamList,
   ProfileStackParamList,
   RootTabParamList,
@@ -31,35 +32,64 @@ import LanguageScreen from '../screens/profile/LanguageScreen';
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
 const TripsStack = createNativeStackNavigator<TripsStackParamList>();
+const AlertsStack = createNativeStackNavigator<AlertsStackParamList>();
 const ProfileStack = createNativeStackNavigator<ProfileStackParamList>();
+
+/**
+ * Real native-stack headers (an actual UINavigationController on iOS) rather
+ * than hand-rolled back-row views — correct large-title collapse-on-scroll,
+ * correct blur, and correct swipe-back integration for free.
+ */
+const rootHeaderOptions = {
+  headerLargeTitle: true,
+  headerLargeTitleShadowVisible: false,
+  headerTintColor: colors.navy,
+  headerTitleStyle: { color: '#000000' },
+  headerLargeTitleStyle: { color: '#000000' },
+};
+
+const pushedHeaderOptions = {
+  headerTintColor: colors.navy,
+  headerTitleStyle: { color: '#000000', fontSize: 17, fontWeight: '600' as const },
+  headerBackTitle: 'Back',
+  headerShadowVisible: true,
+};
 
 function HomeStackNavigator() {
   return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
-      <HomeStack.Screen name="Home" component={HomeScreen} />
-      <HomeStack.Screen name="PilgrimagePackage" component={PilgrimagePackageScreen} />
-      <HomeStack.Screen name="VistaRides" component={VistaRidesScreen} />
-      <HomeStack.Screen name="AirportTransfer" component={AirportTransferScreen} />
+    <HomeStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
+      <HomeStack.Screen name="Home" component={HomeScreen} options={{ title: 'VISTA Transport', ...rootHeaderOptions }} />
+      <HomeStack.Screen name="PilgrimagePackage" component={PilgrimagePackageScreen} options={{ title: 'Pilgrimage Package', ...pushedHeaderOptions }} />
+      <HomeStack.Screen name="VistaRides" component={VistaRidesScreen} options={{ title: 'VISTA Rides', ...pushedHeaderOptions }} />
+      <HomeStack.Screen name="AirportTransfer" component={AirportTransferScreen} options={{ title: 'Airport Transfer', ...pushedHeaderOptions }} />
     </HomeStack.Navigator>
   );
 }
 
 function TripsStackNavigator() {
   return (
-    <TripsStack.Navigator screenOptions={{ headerShown: false }}>
-      <TripsStack.Screen name="Trips" component={TripsScreen} />
-      <TripsStack.Screen name="TripDetail" component={TripDetailScreen} />
-      <TripsStack.Screen name="Tracking" component={TrackingScreen} />
+    <TripsStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
+      <TripsStack.Screen name="Trips" component={TripsScreen} options={{ title: 'My Trips', ...rootHeaderOptions }} />
+      <TripsStack.Screen name="TripDetail" component={TripDetailScreen} options={{ title: 'Trip Detail', ...pushedHeaderOptions }} />
+      <TripsStack.Screen name="Tracking" component={TrackingScreen} options={{ title: 'Live Tracking', ...pushedHeaderOptions }} />
     </TripsStack.Navigator>
+  );
+}
+
+function AlertsStackNavigator() {
+  return (
+    <AlertsStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
+      <AlertsStack.Screen name="Alerts" component={AlertsScreen} options={{ title: 'Notifications', ...rootHeaderOptions }} />
+    </AlertsStack.Navigator>
   );
 }
 
 function ProfileStackNavigator() {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
-      <ProfileStack.Screen name="Profile" component={ProfileScreen} />
-      <ProfileStack.Screen name="Settings" component={SettingsScreen} />
-      <ProfileStack.Screen name="Language" component={LanguageScreen} />
+    <ProfileStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
+      <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', ...rootHeaderOptions }} />
+      <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', ...pushedHeaderOptions }} />
+      <ProfileStack.Screen name="Language" component={LanguageScreen} options={{ title: 'Language', ...pushedHeaderOptions }} />
     </ProfileStack.Navigator>
   );
 }
@@ -98,7 +128,7 @@ export default function TabNavigator() {
       />
       <Tab.Screen
         name="AlertsTab"
-        component={AlertsScreen}
+        component={AlertsStackNavigator}
         options={{
           title: t('tabs.alerts'),
           tabBarIcon: ({ color, size }) => <Ionicons name="notifications" size={size} color={color} />,
