@@ -13,6 +13,7 @@ import ServiceCard from '../../components/ServiceCard';
 import VISTAButton from '../../components/VISTAButton';
 import AnimatedPressable from '../../components/AnimatedPressable';
 import NextTripCard from '../../components/NextTripCard';
+import UpcomingEventsRow, { type ChurchEvent } from '../../components/UpcomingEventsRow';
 import type { BookingStatus } from '../../components/StatusBadge';
 import { ACTIVE_STATUSES, RIDE_ICONS, RIDE_LABELS, SERVICE_ICONS, SERVICE_LABELS } from '../../lib/tripCatalog';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
@@ -48,6 +49,7 @@ export default function HomeScreen({ navigation }: Props) {
   const { user, profile, exitGuestMode } = useAuth();
   const [showLoginPrompt, setShowLoginPrompt] = useState(false);
   const [nextTrip, setNextTrip] = useState<NextTrip | null>(null);
+  const [events, setEvents] = useState<ChurchEvent[]>([]);
 
   const firstName = profile?.full_name?.split(' ')[0] || 'there';
   const hour = new Date().getHours();
@@ -105,6 +107,18 @@ export default function HomeScreen({ navigation }: Props) {
         setNextTrip(candidates[0]?.trip ?? null);
       })();
     }, [user])
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      supabase
+        .from('events')
+        .select('*')
+        .gte('event_date', new Date().toISOString().split('T')[0])
+        .order('event_date', { ascending: true })
+        .limit(3)
+        .then(({ data }) => setEvents((data as ChurchEvent[]) ?? []));
+    }, [])
   );
 
   const requireAuth = (action: () => void) => {
@@ -226,6 +240,11 @@ export default function HomeScreen({ navigation }: Props) {
           </View>
           <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
         </AnimatedPressable>
+
+        <UpcomingEventsRow
+          events={events}
+          onPressEvent={() => navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('AlertsTab')}
+        />
       </ScrollView>
 
       {showLoginPrompt && (
