@@ -6,14 +6,17 @@ import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { HomeStackParamList, RootTabParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { useHideTabBar } from '../../hooks/useHideTabBar';
 import { supabase } from '../../lib/supabase';
 import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
-import VISTAInput from '../../components/VISTAInput';
+import LocationInput from '../../components/LocationInput';
 import BookingSuccess from '../../components/BookingSuccess';
+import { PAYMENT_METHODS, paymentKeyFromLabel, type PaymentMethodKey } from '../../lib/paymentMethods';
 import { colors, radius, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'VistaRides'>;
@@ -34,13 +37,6 @@ const VEHICLES: {
   { key: 'intercity', iconFamily: 'ionicons', icon: 'trail-sign-outline', label: 'Intercity', sub: 'Any Uganda city', maxPax: 4 },
 ];
 
-const PAYMENT_METHODS = [
-  { key: 'mtn', label: 'MTN Mobile Money', icon: 'phone-portrait-outline' },
-  { key: 'airtel', label: 'Airtel Money', icon: 'phone-portrait-outline' },
-  { key: 'card', label: 'Visa / Mastercard', icon: 'card-outline' },
-  { key: 'cash', label: 'Cash to Driver', icon: 'cash-outline' },
-] as const;
-
 function haversineKm(a: Coords, b: Coords) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -56,7 +52,7 @@ function genRideRef() {
 }
 
 export default function VistaRidesScreen({ navigation }: Props) {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const prices = usePricing();
 
   const [vehicle, setVehicle] = useState<VehicleKey>('standard');
@@ -66,11 +62,13 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const [dropoffCoords, setDropoffCoords] = useState<Coords | null>(null);
   const [locatingMe, setLocatingMe] = useState(false);
   const [femaleDriver, setFemaleDriver] = useState(false);
-  const [payMethod, setPayMethod] = useState<(typeof PAYMENT_METHODS)[number]['key']>('cash');
+  const [payMethod, setPayMethod] = useState<PaymentMethodKey>(() => paymentKeyFromLabel(profile?.preferred_payment_method));
   const [submitting, setSubmitting] = useState(false);
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
+
+  useHideTabBar(navigation);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: !bookedRef });
@@ -212,7 +210,10 @@ export default function VistaRidesScreen({ navigation }: Props) {
         title="Ride requested!"
         message="We're matching you with a nearby driver — track live progress from My Trips."
         reference={bookedRef}
-        onDone={() => navigation.getParent()?.goBack()}
+        onDone={() => {
+          navigation.goBack();
+          navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('TripsTab');
+        }}
       />
     );
   }
@@ -242,10 +243,11 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
         <VISTACard style={{ gap: spacing.sm }}>
-          <VISTAInput
+          <LocationInput
             placeholder="Pickup location"
             value={pickup}
             onChangeText={(v) => { setPickup(v); setPickupCoords(null); }}
+            onSelectPlace={({ description, coords }) => { setPickup(description); setPickupCoords(coords); }}
             leftIcon={<Ionicons name="radio-button-on" size={16} color={colors.gold} />}
           />
           <Pressable onPress={useCurrentLocation} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
@@ -254,10 +256,11 @@ export default function VistaRidesScreen({ navigation }: Props) {
               {locatingMe ? 'Finding you…' : 'Use my current location'}
             </Text>
           </Pressable>
-          <VISTAInput
+          <LocationInput
             placeholder="Drop-off location"
             value={dropoff}
             onChangeText={(v) => { setDropoff(v); setDropoffCoords(null); }}
+            onSelectPlace={({ description, coords }) => { setDropoff(description); setDropoffCoords(coords); }}
             leftIcon={<Ionicons name="location" size={16} color={colors.navy} />}
           />
         </VISTACard>

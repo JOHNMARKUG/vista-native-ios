@@ -22,6 +22,7 @@ export type Profile = {
   role: string | null;
   referral_code: string | null;
   points_balance?: number | null;
+  preferred_payment_method: string | null;
 };
 
 type AuthContextValue = {

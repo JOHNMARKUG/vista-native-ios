@@ -3,8 +3,10 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { HomeStackParamList, RootTabParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { useHideTabBar } from '../../hooks/useHideTabBar';
 import { supabase } from '../../lib/supabase';
 import { awardPoints } from '../../lib/points';
 import {
@@ -36,6 +38,8 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
 
   const arrivalSheetRef = useRef<DatePickerSheetRef>(null);
   const departureSheetRef = useRef<DatePickerSheetRef>(null);
+
+  useHideTabBar(navigation);
 
   // Step 1 — arrival
   const [arrivalDate, setArrivalDate] = useState<Date | null>(null);
@@ -198,7 +202,10 @@ export default function PilgrimagePackageScreen({ navigation }: Props) {
         title="Package booked!"
         message="Our team will confirm your payment details by WhatsApp shortly."
         reference={bookedRef}
-        onDone={() => navigation.getParent()?.goBack()}
+        onDone={() => {
+          navigation.goBack();
+          navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('TripsTab');
+        }}
       />
     );
   }

@@ -4,8 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
-import type { HomeStackParamList } from '../../navigation/types';
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
+import type { HomeStackParamList, RootTabParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
+import { useHideTabBar } from '../../hooks/useHideTabBar';
 import { supabase } from '../../lib/supabase';
 import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
@@ -15,14 +17,8 @@ import SegmentedControl from '../../components/SegmentedControl';
 import BookingSuccess from '../../components/BookingSuccess';
 import DatePickerSheet, { type DatePickerSheetRef } from '../../components/DatePickerSheet';
 import { toLocalDateString } from '../../lib/date';
+import { PAYMENT_METHODS, paymentKeyFromLabel, type PaymentMethodKey } from '../../lib/paymentMethods';
 import { colors, radius, spacing } from '../../lib/theme';
-
-const PAYMENT_METHODS = [
-  { key: 'mtn', label: 'MTN Mobile Money', icon: 'phone-portrait-outline' },
-  { key: 'airtel', label: 'Airtel Money', icon: 'phone-portrait-outline' },
-  { key: 'card', label: 'Visa / Mastercard', icon: 'card-outline' },
-  { key: 'cash', label: 'Cash to Driver', icon: 'cash-outline' },
-] as const;
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'AirportTransfer'>;
 type Direction = 'airport_pickup' | 'airport_departure';
@@ -45,12 +41,14 @@ export default function AirportTransferScreen({ navigation }: Props) {
   const [name, setName] = useState(profile?.full_name ?? '');
   const [phone, setPhone] = useState(profile?.phone ?? '');
   const [notes, setNotes] = useState('');
-  const [payMethod, setPayMethod] = useState<(typeof PAYMENT_METHODS)[number]['key']>('cash');
+  const [payMethod, setPayMethod] = useState<PaymentMethodKey>(() => paymentKeyFromLabel(profile?.preferred_payment_method));
   const [submitting, setSubmitting] = useState(false);
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const dateSheetRef = useRef<DatePickerSheetRef>(null);
+
+  useHideTabBar(navigation);
 
   useLayoutEffect(() => {
     navigation.setOptions({ headerShown: !bookedRef, gestureEnabled: !bookedRef });
@@ -171,7 +169,10 @@ export default function AirportTransferScreen({ navigation }: Props) {
         title="Booking confirmed!"
         message="Our team will assign a verified driver and confirm the details shortly."
         reference={bookedRef}
-        onDone={() => navigation.getParent()?.goBack()}
+        onDone={() => {
+          navigation.goBack();
+          navigation.getParent<BottomTabNavigationProp<RootTabParamList>>()?.navigate('TripsTab');
+        }}
       />
     );
   }

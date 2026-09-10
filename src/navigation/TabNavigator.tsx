@@ -29,6 +29,8 @@ import AlertsScreen from '../screens/alerts/AlertsScreen';
 import ProfileScreen from '../screens/profile/ProfileScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import LanguageScreen from '../screens/profile/LanguageScreen';
+import PaymentMethodsScreen from '../screens/profile/PaymentMethodsScreen';
+import WebPageScreen from '../screens/profile/WebPageScreen';
 
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const HomeStack = createNativeStackNavigator<HomeStackParamList>();
@@ -48,6 +50,15 @@ const rootHeaderOptions = {
   headerTitleStyle: { color: '#000000' },
   headerLargeTitleStyle: { color: '#000000' },
 };
+
+/**
+ * The tab bar is absolutely positioned (for the blur effect), which means
+ * React Navigation does NOT automatically hide it on screens pushed deeper
+ * into a tab's stack — it floats on top of everything, including sticky
+ * bottom buttons on those screens. Exported so useHideTabBar can restore
+ * this exact style when a screen that hides it unmounts.
+ */
+export const VISIBLE_TAB_BAR_STYLE = { position: 'absolute' as const, borderTopWidth: 0.5, borderTopColor: '#E3E3E8' };
 
 const pushedHeaderOptions = {
   headerTintColor: colors.navy,
@@ -117,6 +128,12 @@ function ProfileStackNavigator() {
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', ...rootHeaderOptions }} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', ...pushedHeaderOptions }} />
       <ProfileStack.Screen name="Language" component={LanguageScreen} options={{ title: 'Language', ...pushedHeaderOptions }} />
+      <ProfileStack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods', ...pushedHeaderOptions }} />
+      <ProfileStack.Screen
+        name="WebPage"
+        component={WebPageScreen}
+        options={({ route }) => ({ title: route.params.title, ...pushedHeaderOptions })}
+      />
     </ProfileStack.Navigator>
   );
 }
@@ -130,7 +147,7 @@ export default function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: colors.navy,
         tabBarInactiveTintColor: '#8E8E93',
-        tabBarStyle: { position: 'absolute', borderTopWidth: 0.5, borderTopColor: '#E3E3E8' },
+        tabBarStyle: VISIBLE_TAB_BAR_STYLE,
         tabBarBackground: () => (
           <BlurView intensity={90} tint="light" style={{ ...StyleSheetAbsoluteFill }} />
         ),
