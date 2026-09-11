@@ -10,6 +10,7 @@ export type HomeStackParamList = {
   PilgrimagePackage: undefined;
   VistaRides: undefined;
   AirportTransfer: undefined;
+  WebPage: { url: string; title: string };
 };
 
 export type TripsStackParamList = {

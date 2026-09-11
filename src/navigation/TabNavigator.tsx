@@ -100,6 +100,11 @@ function HomeStackNavigator() {
       <HomeStack.Screen name="PilgrimagePackage" component={PilgrimagePackageScreen} options={{ title: 'Pilgrimage Package', ...pushedHeaderOptions }} />
       <HomeStack.Screen name="VistaRides" component={VistaRidesScreen} options={{ title: 'VISTA Rides', ...pushedHeaderOptions }} />
       <HomeStack.Screen name="AirportTransfer" component={AirportTransferScreen} options={{ title: 'Airport Transfer', ...pushedHeaderOptions }} />
+      <HomeStack.Screen
+        name="WebPage"
+        component={WebPageScreen}
+        options={({ route }) => ({ title: route.params.title, ...pushedHeaderOptions })}
+      />
     </HomeStack.Navigator>
   );
 }

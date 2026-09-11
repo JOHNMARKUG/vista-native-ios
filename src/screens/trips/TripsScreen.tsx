@@ -130,25 +130,21 @@ export default function TripsScreen({ navigation }: Props) {
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
-      <View style={{ padding: spacing.md, paddingBottom: spacing.sm }}>
-        <SegmentedControl segments={TABS} value={tab} onChange={setTab} />
-      </View>
-
-      {arrivedBooking && (
-        <View style={{ paddingHorizontal: spacing.md, paddingBottom: spacing.sm }}>
-          <VISTAButton
-            title="Your driver has arrived — tap to view"
-            variant="primary"
-            onPress={() => navigation.navigate('TripDetail', { id: arrivedBooking.id, source: 'booking' })}
-          />
-        </View>
-      )}
-
       <ScrollView
         contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ padding: spacing.md, gap: spacing.sm, paddingBottom: spacing.xxl }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.navy} />}
       >
+        <SegmentedControl segments={TABS} value={tab} onChange={setTab} />
+
+        {arrivedBooking && (
+          <VISTAButton
+            title="Your driver has arrived — tap to view"
+            variant="primary"
+            onPress={() => navigation.navigate('TripDetail', { id: arrivedBooking.id, source: 'booking' })}
+          />
+        )}
+
         {loading ? null : trips.length === 0 ? (
           <View style={{ alignItems: 'center', padding: spacing.xxl, gap: spacing.md }}>
             <Text style={{ fontSize: 15, fontWeight: '600', color: colors.navy }}>No trips yet</Text>

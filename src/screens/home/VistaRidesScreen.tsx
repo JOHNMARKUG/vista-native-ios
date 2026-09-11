@@ -1,5 +1,5 @@
 import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import PlatformMap from '../../components/PlatformMap';
 import * as Location from 'expo-location';
@@ -190,7 +190,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
           },
         });
         if (pesapal?.redirect_url) {
-          Linking.openURL(pesapal.redirect_url);
+          navigation.navigate('WebPage', { url: pesapal.redirect_url, title: 'Complete Payment' });
         }
       }
 
@@ -302,8 +302,14 @@ export default function VistaRidesScreen({ navigation }: Props) {
         <Pressable onPress={openPaymentSheet}>
           <VISTACard>
             <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Text style={{ fontSize: 14, color: colors.textPrimary, fontWeight: '600' }}>{selectedPaymentLabel}</Text>
-              <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+              <View>
+                <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>Payment method</Text>
+                <Text style={{ fontSize: 15, color: colors.textPrimary, fontWeight: '600' }}>{selectedPaymentLabel}</Text>
+              </View>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                <Text style={{ fontSize: 13, color: colors.navy, fontWeight: '600' }}>Change</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.navy} />
+              </View>
             </View>
           </VISTACard>
         </Pressable>

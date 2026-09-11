@@ -3,7 +3,9 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import VISTAInput from './VISTAInput';
 import { colors, radius, shadows, spacing } from '../lib/theme';
 
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+// Prefer a dedicated Places key (see the long comment below) — falls back to
+// the Maps key so this still tries to work if a separate one isn't set up.
+const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY || process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
 
 type Prediction = { place_id: string; description: string };
 export type PlaceCoords = { lat: number; lng: number };
@@ -26,8 +28,9 @@ type Props = {
  * autocomplete: pick a suggestion and its coordinates are resolved
  * immediately, so distance-based pricing can update live.
  *
- * Requires EXPO_PUBLIC_GOOGLE_MAPS_KEY to be usable for the Places API from
- * a native app (an "iOS apps" / bundle-ID restricted key, or unrestricted —
+ * Requires EXPO_PUBLIC_GOOGLE_PLACES_KEY (preferred) or EXPO_PUBLIC_GOOGLE_MAPS_KEY
+ * to be usable for the Places API from a native app (an "iOS apps" /
+ * bundle-ID restricted key, or unrestricted —
  * NOT an "HTTP referrers" restricted key, which the Places REST API
  * rejects outright with REQUEST_DENIED since native requests carry no
  * referrer header). If the key can't be used this way, requests just fail
