@@ -44,3 +44,4 @@ yarn-error.*
 # Installed-skill symlink is an absolute host path (from `npx skills add`) —
 # not portable. The actual skill content lives in .agents/, which is tracked.
 .claude/skills/
+supabase/.temp/
