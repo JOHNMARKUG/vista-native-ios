@@ -3,12 +3,14 @@ import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import { useAuth } from '../context/AuthContext';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 import LoadingScreen from '../components/LoadingScreen';
 import { colors } from '../lib/theme';
 
 import AuthNavigator from './AuthNavigator';
 import TabNavigator from './TabNavigator';
 import CompleteProfileScreen from '../screens/auth/CompleteProfileScreen';
+import { navigationRef } from './navigationRef';
 
 const NAV_THEME = {
   ...DefaultTheme,
@@ -24,6 +26,7 @@ const ProfileGate = createNativeStackNavigator();
 
 export default function AppNavigator() {
   const { loading, session, profile, isGuest } = useAuth();
+  usePushNotifications(session?.user?.id);
 
   if (loading) return <LoadingScreen />;
   // Session exists but the profile row hasn't loaded yet — treat as still loading
@@ -34,7 +37,7 @@ export default function AppNavigator() {
   const canEnterApp = (!!session && !needsProfile) || (isGuest && !session);
 
   return (
-    <NavigationContainer theme={NAV_THEME}>
+    <NavigationContainer ref={navigationRef} theme={NAV_THEME}>
       {needsProfile ? (
         <ProfileGate.Navigator screenOptions={{ headerShown: false }}>
           <ProfileGate.Screen name="CompleteProfile" component={CompleteProfileScreen} />
