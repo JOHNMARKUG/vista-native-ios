@@ -3,11 +3,9 @@ import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import VISTAInput from './VISTAInput';
 import { colors, radius, shadows, spacing } from '../lib/theme';
 
-// Prefer a dedicated Places key (see the long comment below) — falls back to
-// the Maps key so this still tries to work if a separate one isn't set up.
-const GOOGLE_MAPS_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_KEY || process.env.EXPO_PUBLIC_GOOGLE_MAPS_KEY;
+const HERE_API_KEY = process.env.EXPO_PUBLIC_HERE_API_KEY;
 
-type Prediction = { place_id: string; description: string };
+type Prediction = { id: string; title: string; lat: number; lng: number };
 export type PlaceCoords = { lat: number; lng: number };
 
 type Props = {
@@ -24,18 +22,20 @@ type Props = {
  * A plain address field degrades to "type it and hope the one-shot geocode
  * at submit time finds it" — no suggestions, no confirmation you picked the
  * right place, and (for VISTA Rides) no distance/price preview until after
- * you've already requested the ride. This adds real Google Places
- * autocomplete: pick a suggestion and its coordinates are resolved
- * immediately, so distance-based pricing can update live.
+ * you've already requested the ride. This adds real place-search
+ * autocomplete via HERE Technologies' Autosuggest API (the standard choice
+ * for driver/fleet navigation data, not just general web search): pick a
+ * suggestion and its coordinates are resolved immediately, so
+ * distance-based pricing can update live.
  *
- * Requires EXPO_PUBLIC_GOOGLE_PLACES_KEY (preferred) or EXPO_PUBLIC_GOOGLE_MAPS_KEY
- * to be usable for the Places API from a native app (an "iOS apps" /
- * bundle-ID restricted key, or unrestricted —
- * NOT an "HTTP referrers" restricted key, which the Places REST API
- * rejects outright with REQUEST_DENIED since native requests carry no
- * referrer header). If the key can't be used this way, requests just fail
- * silently and the field behaves like a plain text input — no crash, no
- * regression from before this component existed.
+ * Requires EXPO_PUBLIC_HERE_API_KEY. HERE's Autosuggest response includes
+ * `position` directly on resolvable results, so unlike Google's
+ * Autocomplete+Details flow this needs only one request per keystroke and
+ * one per selection isn't needed at all. Suggestions without a `position`
+ * (query refinements like "coffee shops near" rather than an actual place)
+ * are filtered out — every remaining suggestion is a real, pickable
+ * location. If the key is missing or a request fails, this just shows no
+ * suggestions — no crash, plain text entry still works.
  */
 export default function LocationInput({
   label,
@@ -50,11 +50,10 @@ export default function LocationInput({
   const [loading, setLoading] = useState(false);
   const [focused, setFocused] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const sessionToken = useRef(Math.random().toString(36).slice(2));
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!focused || value.trim().length < 3 || !GOOGLE_MAPS_KEY) {
+    if (!focused || value.trim().length < 3 || !HERE_API_KEY) {
       setPredictions([]);
       return;
     }
@@ -62,12 +61,19 @@ export default function LocationInput({
       setLoading(true);
       try {
         const url =
-          `https://maps.googleapis.com/maps/api/place/autocomplete/json` +
-          `?input=${encodeURIComponent(value)}&components=country:ug` +
-          `&sessiontoken=${sessionToken.current}&key=${GOOGLE_MAPS_KEY}`;
+          `https://autosuggest.search.hereapi.com/v1/autosuggest` +
+          `?q=${encodeURIComponent(value)}&in=countryCode:UGA&limit=6&apiKey=${HERE_API_KEY}`;
         const res = await fetch(url);
         const json = await res.json();
-        setPredictions(json.status === 'OK' ? json.predictions : []);
+        const items = (json.items ?? [])
+          .filter((item: any) => item.position && typeof item.position.lat === 'number')
+          .map((item: any) => ({
+            id: item.id,
+            title: item.address?.label ?? item.title,
+            lat: item.position.lat,
+            lng: item.position.lng,
+          }));
+        setPredictions(items);
       } catch {
         setPredictions([]);
       } finally {
@@ -79,23 +85,11 @@ export default function LocationInput({
     };
   }, [value, focused]);
 
-  const selectPrediction = async (p: Prediction) => {
-    onChangeText(p.description);
+  const selectPrediction = (p: Prediction) => {
+    onChangeText(p.title);
     setPredictions([]);
     setFocused(false);
-    try {
-      const url =
-        `https://maps.googleapis.com/maps/api/place/details/json` +
-        `?place_id=${p.place_id}&fields=geometry` +
-        `&sessiontoken=${sessionToken.current}&key=${GOOGLE_MAPS_KEY}`;
-      const res = await fetch(url);
-      const json = await res.json();
-      const loc = json.result?.geometry?.location;
-      if (loc) onSelectPlace({ description: p.description, coords: { lat: loc.lat, lng: loc.lng } });
-    } catch {
-      // Text is still filled in — just no coordinates for distance/pricing.
-    }
-    sessionToken.current = Math.random().toString(36).slice(2);
+    onSelectPlace({ description: p.title, coords: { lat: p.lat, lng: p.lng } });
   };
 
   const showDropdown = focused && (loading || predictions.length > 0);
@@ -134,9 +128,9 @@ export default function LocationInput({
             </View>
           ) : (
             predictions.map((p) => (
-              <Pressable key={p.place_id} onPress={() => selectPrediction(p)} style={{ paddingVertical: 10, paddingHorizontal: spacing.md }}>
+              <Pressable key={p.id} onPress={() => selectPrediction(p)} style={{ paddingVertical: 10, paddingHorizontal: spacing.md }}>
                 <Text style={{ fontSize: 14, color: colors.textPrimary }} numberOfLines={2}>
-                  {p.description}
+                  {p.title}
                 </Text>
               </Pressable>
             ))
