@@ -38,11 +38,23 @@ async function fetchPredictions(query: string): Promise<Prediction[]> {
   if (query.trim().length < 3 || !HERE_API_KEY) return [];
   const url =
     `https://autosuggest.search.hereapi.com/v1/autosuggest` +
-    `?q=${encodeURIComponent(query)}&in=${UGANDA_BIAS}&limit=8&apiKey=${HERE_API_KEY}`;
+    `?q=${encodeURIComponent(query)}&in=${UGANDA_BIAS}&limit=10&apiKey=${HERE_API_KEY}`;
   const res = await fetch(url);
   const json = await res.json();
   return (json.items ?? [])
     .filter((item: any) => item.position && typeof item.position.lat === 'number')
+    .filter((item: any) => {
+      // The bias circle is wide enough (to cover intercity trips across
+      // Uganda) that it spills slightly into Kenya, Rwanda, Tanzania and
+      // DRC border areas. HERE's own relevance ranking doesn't know this
+      // service only operates in Uganda, so an exact-name match just over
+      // the border can outrank the right in-country result. The address
+      // label always ends with the country name — use that as a hard
+      // filter rather than trying to tune the radius/ranking further.
+      const label: string = item.address?.label ?? '';
+      const country = label.split(',').pop()?.trim().toLowerCase();
+      return country === 'uganda';
+    })
     .map((item: any) => {
       const label: string = item.address?.label ?? item.title ?? '';
       const [first, ...rest] = label.split(',');
