@@ -5,6 +5,11 @@ import { colors, radius, shadows, spacing } from '../lib/theme';
 
 const HERE_API_KEY = process.env.EXPO_PUBLIC_HERE_API_KEY;
 
+// HERE's Autosuggest requires one of `at` / `in=bbox` / `in=circle` / `in=ring`
+// — there's no plain country-code filter. A generous circle around Kampala
+// covers Uganda's operating area without needing per-region tuning.
+const UGANDA_BIAS = 'circle:0.3476,32.5825;r=300000';
+
 type Prediction = { id: string; title: string; lat: number; lng: number };
 export type PlaceCoords = { lat: number; lng: number };
 
@@ -62,7 +67,7 @@ export default function LocationInput({
       try {
         const url =
           `https://autosuggest.search.hereapi.com/v1/autosuggest` +
-          `?q=${encodeURIComponent(value)}&in=countryCode:UGA&limit=6&apiKey=${HERE_API_KEY}`;
+          `?q=${encodeURIComponent(value)}&in=${UGANDA_BIAS}&limit=6&apiKey=${HERE_API_KEY}`;
         const res = await fetch(url);
         const json = await res.json();
         const items = (json.items ?? [])
