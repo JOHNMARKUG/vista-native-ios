@@ -7,7 +7,6 @@
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "scheme": "vistatransport",
-    "newArchEnabled": true,
     "ios": {
       "bundleIdentifier": "ug.vista.transport",
       "buildNumber": "1",
@@ -78,7 +77,12 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-apple-authentication"
+      "expo-apple-authentication",
+      "expo-font",
+      "expo-image",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
