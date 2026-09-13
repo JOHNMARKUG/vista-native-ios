@@ -14,7 +14,7 @@ import { supabase } from '../../lib/supabase';
 import { usePricing } from '../../lib/usePricing';
 import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
-import LocationInput from '../../components/LocationInput';
+import LocationSearchSheet, { type LocationSearchSheetRef } from '../../components/LocationSearchSheet';
 import BookingSuccess from '../../components/BookingSuccess';
 import { PAYMENT_METHODS, paymentKeyFromLabel, type PaymentMethodKey } from '../../lib/paymentMethods';
 import { colors, radius, spacing } from '../../lib/theme';
@@ -67,6 +67,8 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
   const sheetRef = useRef<BottomSheetModal>(null);
+  const locationSheetRef = useRef<LocationSearchSheetRef>(null);
+  const [activeField, setActiveField] = useState<'pickup' | 'dropoff' | null>(null);
 
   useHideTabBar(navigation);
 
@@ -120,6 +122,15 @@ export default function VistaRidesScreen({ navigation }: Props) {
   }, []);
 
   const openPaymentSheet = () => sheetRef.current?.present();
+
+  const openPickupSearch = () => {
+    setActiveField('pickup');
+    locationSheetRef.current?.present(pickup);
+  };
+  const openDropoffSearch = () => {
+    setActiveField('dropoff');
+    locationSheetRef.current?.present(dropoff);
+  };
 
   const handleConfirm = async () => {
     if (!user) {
@@ -243,26 +254,32 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
         <VISTACard style={{ gap: spacing.sm }}>
-          <LocationInput
-            placeholder="Pickup location"
-            value={pickup}
-            onChangeText={(v) => { setPickup(v); setPickupCoords(null); }}
-            onSelectPlace={({ description, coords }) => { setPickup(description); setPickupCoords(coords); }}
-            leftIcon={<Ionicons name="radio-button-on" size={16} color={colors.gold} />}
-          />
+          <Pressable onPress={openPickupSearch} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="radio-button-on" size={16} color={colors.gold} />
+            <Text
+              style={{ flex: 1, fontSize: 15, color: pickup ? colors.textPrimary : colors.textSecondary }}
+              numberOfLines={1}
+            >
+              {pickup || 'Pickup location'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+          </Pressable>
           <Pressable onPress={useCurrentLocation} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
             <Ionicons name="locate" size={14} color={colors.navy} />
             <Text style={{ fontSize: 12, color: colors.navy, fontWeight: '600' }}>
               {locatingMe ? 'Finding you…' : 'Use my current location'}
             </Text>
           </Pressable>
-          <LocationInput
-            placeholder="Drop-off location"
-            value={dropoff}
-            onChangeText={(v) => { setDropoff(v); setDropoffCoords(null); }}
-            onSelectPlace={({ description, coords }) => { setDropoff(description); setDropoffCoords(coords); }}
-            leftIcon={<Ionicons name="location" size={16} color={colors.navy} />}
-          />
+          <Pressable onPress={openDropoffSearch} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+            <Ionicons name="location" size={16} color={colors.navy} />
+            <Text
+              style={{ flex: 1, fontSize: 15, color: dropoff ? colors.textPrimary : colors.textSecondary }}
+              numberOfLines={1}
+            >
+              {dropoff || 'Drop-off location'}
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+          </Pressable>
         </VISTACard>
 
         <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -361,6 +378,20 @@ export default function VistaRidesScreen({ navigation }: Props) {
           ))}
         </BottomSheetView>
       </BottomSheetModal>
+
+      <LocationSearchSheet
+        ref={locationSheetRef}
+        title={activeField === 'dropoff' ? 'Drop-off Location' : 'Pickup Location'}
+        onSelect={({ description, coords }) => {
+          if (activeField === 'dropoff') {
+            setDropoff(description);
+            setDropoffCoords(coords);
+          } else {
+            setPickup(description);
+            setPickupCoords(coords);
+          }
+        }}
+      />
     </SafeAreaView>
   );
 }
