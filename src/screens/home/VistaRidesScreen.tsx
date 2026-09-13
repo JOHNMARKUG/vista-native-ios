@@ -68,7 +68,6 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
   const sheetRef = useRef<BottomSheetModal>(null);
   const locationSheetRef = useRef<LocationSearchSheetRef>(null);
-  const [activeField, setActiveField] = useState<'pickup' | 'dropoff' | null>(null);
 
   useHideTabBar(navigation);
 
@@ -124,12 +123,10 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const openPaymentSheet = () => sheetRef.current?.present();
 
   const openPickupSearch = () => {
-    setActiveField('pickup');
-    locationSheetRef.current?.present(pickup);
+    locationSheetRef.current?.present({ field: 'pickup', pickup, dropoff });
   };
   const openDropoffSearch = () => {
-    setActiveField('dropoff');
-    locationSheetRef.current?.present(dropoff);
+    locationSheetRef.current?.present({ field: 'dropoff', pickup, dropoff });
   };
 
   const handleConfirm = async () => {
@@ -381,9 +378,9 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
       <LocationSearchSheet
         ref={locationSheetRef}
-        title={activeField === 'dropoff' ? 'Drop-off Location' : 'Pickup Location'}
-        onSelect={({ description, coords }) => {
-          if (activeField === 'dropoff') {
+        onUseCurrentLocation={useCurrentLocation}
+        onSelect={(field, { description, coords }) => {
+          if (field === 'dropoff') {
             setDropoff(description);
             setDropoffCoords(coords);
           } else {
