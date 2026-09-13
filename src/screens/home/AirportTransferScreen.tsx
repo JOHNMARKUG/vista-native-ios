@@ -55,14 +55,17 @@ export default function AirportTransferScreen({ navigation }: Props) {
   }, [navigation, bookedRef]);
 
   const pricing = useMemo(() => {
-    const basePerPax = direction === 'airport_pickup' ? prices.airport_pickup : prices.airport_departure;
-    const baseTotal = basePerPax * passengers;
+    // Flat per-vehicle fare — a private transfer costs the same whether one
+    // person or a full group is riding, same as every real transfer service.
+    // (Previously multiplied by passenger count, which made group bookings —
+    // the norm for pilgrims travelling together — wildly overpriced.)
+    const baseTotal = direction === 'airport_pickup' ? prices.airport_pickup : prices.airport_departure;
     const platformFee = Math.round(baseTotal * (prices.platform_fee / 100));
     const totalAmount = baseTotal + platformFee;
     const totalUgx = totalAmount * prices.ugx_rate;
     const driverEarnings = Math.round(baseTotal * 0.85);
-    return { basePerPax, baseTotal, platformFee, totalAmount, totalUgx, driverEarnings };
-  }, [direction, passengers, prices]);
+    return { baseTotal, platformFee, totalAmount, totalUgx, driverEarnings };
+  }, [direction, prices]);
 
   const handleSubmit = async () => {
     if (!user) {
@@ -247,7 +250,7 @@ export default function AirportTransferScreen({ navigation }: Props) {
 
         <VISTACardComp style={{ gap: 4 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 13, color: colors.textSecondary }}>Base fare × {passengers}</Text>
+            <Text style={{ fontSize: 13, color: colors.textSecondary }}>Vehicle fare</Text>
             <Text style={{ fontSize: 13, color: colors.textPrimary }}>USD {pricing.baseTotal}</Text>
           </View>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>

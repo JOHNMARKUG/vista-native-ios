@@ -5,11 +5,12 @@ import { supabase } from './supabase';
 const CACHE_KEY = 'vista_prices_v1';
 
 export const DEFAULT_PRICES = {
-  airport_pickup: 100,
+  // Flat per-vehicle fares (not per-passenger — see AirportTransferScreen).
+  airport_pickup: 35,
   ministry_transport: 50,
   group_convoy: 300,
   city_transfer: 60,
-  airport_departure: 100,
+  airport_departure: 40,
   crusade: 50,
   conference: 80,
   vip: 150,
@@ -29,7 +30,7 @@ export const DEFAULT_PRICES = {
   vista_prem_per_km: 2500,
   vista_prem_min: 15000,
   vista_inter_base: 5000,
-  vista_inter_per_km: 3500,
+  vista_inter_per_km: 2000,
   vista_inter_min: 30000,
 } as const;
 
