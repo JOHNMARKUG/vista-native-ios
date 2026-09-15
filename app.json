@@ -12,9 +12,6 @@
       "buildNumber": "1",
       "supportsTablet": false,
       "usesAppleSignIn": true,
-      "config": {
-        "googleMapsApiKey": "$(EXPO_PUBLIC_GOOGLE_MAPS_KEY)"
-      },
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "VISTA needs your location to detect your pickup point and show nearby drivers.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "VISTA needs your location during trips to track your journey and share it with your driver.",
