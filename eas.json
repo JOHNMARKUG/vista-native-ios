@@ -17,7 +17,8 @@
     "production": {
       "ios": {
         "appleId": "vistalimitedug@gmail.com",
-        "appleTeamId": "6HFWNZHT8G"
+        "appleTeamId": "6HFWNZHT8G",
+        "ascAppId": "6804886092"
       }
     }
   }
