@@ -17,7 +17,12 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "VISTA needs your location during trips to track your journey and share it with your driver.",
         "NSCameraUsageDescription": "VISTA needs camera access to take your profile photo.",
         "NSPhotoLibraryUsageDescription": "VISTA needs photo access to upload your profile photo.",
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "CFBundleURLTypes": [
+          {
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.444032839313-0lpvt3pcllv30nbvmeldgh8u3poadppf"]
+          }
+        ]
       }
     },
     "android": {

@@ -45,14 +45,20 @@ export default function LoginScreen({ navigation }: Props) {
   // (see handleApple) instead of the button just never appearing.
   const showAppleButton = Platform.OS === 'ios';
 
-  // Explicit redirectUri instead of the hook's own default: the default
-  // builds `<bundleId>:/oauthredirect`, which requires the bundle id itself
-  // to be a registered URL scheme. This app registers `vistatransport`
-  // (app.json `scheme`) instead, so we point the redirect there — it also
-  // resolves correctly to an exp:// proxy URL automatically when running in
-  // Expo Go, no extra config needed for that case.
+  // Google's iOS-type OAuth clients don't have a configurable "Authorized
+  // redirect URIs" list in Cloud Console — they only accept a redirect
+  // using the *reversed client ID* as the URL scheme, which is why this
+  // can't just be the app's own `vistatransport` scheme (that produced a
+  // real "doesn't comply with Google's OAuth 2.0 policy" 400 on a signed
+  // build). The matching CFBundleURLTypes entry is registered in app.json.
+  // Still resolves to an exp:// proxy URL automatically in Expo Go, no
+  // extra config needed for that case.
   const redirectUri = useMemo(
-    () => AuthSession.makeRedirectUri({ scheme: 'vistatransport', path: 'oauthredirect' }),
+    () =>
+      AuthSession.makeRedirectUri({
+        scheme: 'com.googleusercontent.apps.444032839313-0lpvt3pcllv30nbvmeldgh8u3poadppf',
+        path: 'oauthredirect',
+      }),
     []
   );
 
@@ -199,23 +205,19 @@ export default function LoginScreen({ navigation }: Props) {
 
         <View style={{ gap: spacing.sm }}>
           {showAppleButton && (
-            <Pressable
+            // Apple's own native button, not a hand-styled lookalike: a
+            // custom Pressable here rendered invisible-but-tappable on a
+            // real signed build (a React Native styling bug this native
+            // control can't have, since iOS draws it itself) — and Apple's
+            // guidelines expect their own button for Sign in with Apple
+            // anyway, not a recreation of it.
+            <AppleAuthentication.AppleAuthenticationButton
+              buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
+              buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
+              cornerRadius={radius.button}
+              style={{ width: '100%', height: 52, opacity: appleLoading ? 0.8 : 1 }}
               onPress={handleApple}
-              disabled={appleLoading}
-              style={({ pressed }) => ({
-                height: 52,
-                borderRadius: radius.button,
-                backgroundColor: '#000000',
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 10,
-                opacity: pressed || appleLoading ? 0.8 : 1,
-              })}
-            >
-              <Ionicons name="logo-apple" size={20} color="#FFFFFF" />
-              <Text style={{ fontSize: 16, fontWeight: '600', color: '#FFFFFF' }}>Continue with Apple</Text>
-            </Pressable>
+            />
           )}
 
           <Pressable
