@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import * as Location from 'expo-location';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -13,6 +14,8 @@ import StatusBadge, { type BookingStatus } from '../../components/StatusBadge';
 import { colors, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<TripsStackParamList, 'TripDetail'>;
+
+const SOS_WHATSAPP = '256785585703';
 
 type Driver = {
   id: string;
@@ -38,6 +41,7 @@ export default function TripDetailScreen({ route, navigation }: Props) {
   const [rating, setRating] = useState(0);
   const [submittingRating, setSubmittingRating] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [sendingSos, setSendingSos] = useState(false);
 
   const fetchTrip = useCallback(async () => {
     const { data } = await supabase.from(table).select('*').eq('id', id).single();
@@ -97,6 +101,43 @@ export default function TripDetailScreen({ route, navigation }: Props) {
     ]);
   };
 
+  const sendSos = async () => {
+    setSendingSos(true);
+    try {
+      let locationLine = '';
+      const { status: permStatus } = await Location.requestForegroundPermissionsAsync();
+      if (permStatus === 'granted') {
+        try {
+          const pos = await Location.getCurrentPositionAsync({});
+          locationLine = `\nMy live location: https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
+        } catch {
+          // Fall through and send the alert without coordinates rather than
+          // blocking the whole SOS on a GPS fix failing.
+        }
+      }
+
+      const message =
+        `EMERGENCY — I need help on VISTA trip ${trip.booking_ref ?? id}.` +
+        (driver ? `\nDriver: ${driver.full_name} (${driver.plate_number})` : '') +
+        locationLine;
+
+      await Linking.openURL(`https://wa.me/${SOS_WHATSAPP}?text=${encodeURIComponent(message)}`);
+    } finally {
+      setSendingSos(false);
+    }
+  };
+
+  const handleSos = () => {
+    Alert.alert(
+      'Send emergency alert?',
+      "This opens WhatsApp with your live location and trip details ready to send to VISTA's safety team. Tap Send in WhatsApp to complete it.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Send SOS', style: 'destructive', onPress: sendSos },
+      ]
+    );
+  };
+
   const handleRate = async (stars: number) => {
     setRating(stars);
     setSubmittingRating(true);
@@ -126,6 +167,28 @@ export default function TripDetailScreen({ route, navigation }: Props) {
             icon={<Ionicons name="navigate" size={16} color="#FFFFFF" />}
             onPress={() => navigation.navigate('Tracking', { id, source })}
           />
+        )}
+
+        {isActive && (
+          <Pressable
+            onPress={handleSos}
+            disabled={sendingSos}
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
+              backgroundColor: colors.error,
+              borderRadius: 12,
+              paddingVertical: 14,
+              opacity: sendingSos ? 0.7 : 1,
+            }}
+          >
+            <Ionicons name="alert-circle" size={20} color="#FFFFFF" />
+            <Text style={{ color: '#FFFFFF', fontSize: 15, fontWeight: '800' }}>
+              {sendingSos ? 'Getting your location…' : 'SOS — Send Emergency Alert'}
+            </Text>
+          </Pressable>
         )}
 
         {driver && (

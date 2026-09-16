@@ -40,6 +40,7 @@ type AuthContextValue = {
   completeGoogleSignIn: (idToken: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
+  deleteAccount: () => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
@@ -202,6 +203,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (session?.user) await fetchProfile(session.user.id);
   }, [session, fetchProfile]);
 
+  const deleteAccount = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      await supabase.auth.signOut();
+      setProfile(null);
+      return { error: null };
+    } catch (err) {
+      return { error: (err as Error)?.message ?? 'Could not delete your account. Please try again.' };
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -218,6 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         completeGoogleSignIn,
         signOut,
         refreshProfile,
+        deleteAccount,
       }}
     >
       {children}

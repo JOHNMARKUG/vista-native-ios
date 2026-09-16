@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import Constants from 'expo-constants';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
@@ -11,25 +11,36 @@ import { colors, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'Settings'>;
 
-const WHATSAPP_SUPPORT = '256785585703';
 const GROUPED_BG = '#F2F2F7';
 
 export default function SettingsScreen({ navigation }: Props) {
   const { t, i18n } = useTranslation();
+  const { deleteAccount } = useAuth();
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [deleting, setDeleting] = useState(false);
 
   const currentLanguageLabel = { en: 'English', fr: 'Français', es: 'Español' }[i18n.language] ?? 'English';
 
   const handleDeleteAccount = () => {
     Alert.alert(
       t('settings.deleteAccount'),
-      'This permanently deletes your VISTA account and booking history. This cannot be undone. Contact support to proceed.',
+      'This permanently deletes your VISTA account, profile, and personal details. Your booking history is kept for accounting purposes but your name and contact details are removed from it. This cannot be undone.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Contact Support',
+          text: 'Delete My Account',
           style: 'destructive',
-          onPress: () => Linking.openURL(`https://wa.me/${WHATSAPP_SUPPORT}?text=${encodeURIComponent('I would like to delete my VISTA account.')}`),
+          onPress: async () => {
+            setDeleting(true);
+            const { error } = await deleteAccount();
+            setDeleting(false);
+            if (error) {
+              Alert.alert('Could not delete account', error);
+            }
+            // On success, session becomes null and the root navigator
+            // switches to the signed-out stack on its own — no manual
+            // navigation needed here.
+          },
         },
       ]
     );
@@ -66,7 +77,15 @@ export default function SettingsScreen({ navigation }: Props) {
       </VISTACard>
 
       <VISTACard style={{ padding: 0 }}>
-        <Row icon="trash-outline" label={t('settings.deleteAccount')} labelColor={colors.error} onPress={handleDeleteAccount} />
+        <Pressable
+          onPress={handleDeleteAccount}
+          disabled={deleting}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12, paddingHorizontal: spacing.md, minHeight: 48, opacity: deleting ? 0.5 : 1 }}
+        >
+          <Ionicons name="trash-outline" size={20} color={colors.error} />
+          <Text style={{ flex: 1, fontSize: 16, color: colors.error }}>{t('settings.deleteAccount')}</Text>
+          {deleting && <ActivityIndicator size="small" color={colors.error} />}
+        </Pressable>
       </VISTACard>
 
       <Text style={{ textAlign: 'center', fontSize: 12, color: colors.textSecondary }}>
