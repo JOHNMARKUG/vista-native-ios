@@ -1,10 +1,10 @@
-import React, { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import PlatformMap from '../../components/PlatformMap';
 import * as Location from 'expo-location';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
-import { BottomSheetModal, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
+import BottomSheet, { BottomSheetModal, BottomSheetScrollView, BottomSheetView, BottomSheetBackdrop } from '@gorhom/bottom-sheet';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs';
 import type { HomeStackParamList, RootTabParamList } from '../../navigation/types';
@@ -17,7 +17,7 @@ import VISTACard from '../../components/VISTACard';
 import LocationSearchSheet, { type LocationSearchSheetRef } from '../../components/LocationSearchSheet';
 import BookingSuccess from '../../components/BookingSuccess';
 import { PAYMENT_METHODS, paymentKeyFromLabel, type PaymentMethodKey } from '../../lib/paymentMethods';
-import { colors, radius, spacing } from '../../lib/theme';
+import { colors, radius, shadows, spacing } from '../../lib/theme';
 
 type Props = NativeStackScreenProps<HomeStackParamList, 'VistaRides'>;
 type VehicleKey = 'boda' | 'standard' | 'premium' | 'intercity';
@@ -37,6 +37,9 @@ const VEHICLES: {
   { key: 'intercity', iconFamily: 'ionicons', icon: 'trail-sign-outline', label: 'Intercity', sub: 'Any Uganda city', maxPax: 4 },
 ];
 
+// Kampala — used only until the rider's real position is known.
+const DEFAULT_REGION = { latitude: 0.3476, longitude: 32.5825, latitudeDelta: 0.08, longitudeDelta: 0.08 };
+
 function haversineKm(a: Coords, b: Coords) {
   const R = 6371;
   const dLat = ((b.lat - a.lat) * Math.PI) / 180;
@@ -51,9 +54,19 @@ function genRideRef() {
   return `VR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
 
+function formatEta(minutesFromNow: number) {
+  const d = new Date(Date.now() + minutesFromNow * 60000);
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+}
+
+const styles = StyleSheet.create({
+  mapFill: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
+});
+
 export default function VistaRidesScreen({ navigation }: Props) {
   const { user, profile } = useAuth();
   const prices = usePricing();
+  const insets = useSafeAreaInsets();
 
   const [vehicle, setVehicle] = useState<VehicleKey>('standard');
   const [pickup, setPickup] = useState('');
@@ -66,14 +79,17 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [bookedRef, setBookedRef] = useState<string | null>(null);
 
-  const sheetRef = useRef<BottomSheetModal>(null);
+  const paymentSheetRef = useRef<BottomSheetModal>(null);
+  const bookingSheetRef = useRef<BottomSheet>(null);
   const locationSheetRef = useRef<LocationSearchSheetRef>(null);
 
   useHideTabBar(navigation);
 
+  // A full-screen map has no room for a native header — a floating back
+  // button over the map replaces it instead.
   useLayoutEffect(() => {
-    navigation.setOptions({ headerShown: !bookedRef });
-  }, [navigation, bookedRef]);
+    navigation.setOptions({ headerShown: false });
+  }, [navigation]);
 
   const pricingByVehicle = useMemo(() => {
     const map: Record<VehicleKey, { base: number; perKm: number; min: number }> = {
@@ -102,7 +118,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
     return Math.max(p.base + Math.round(distanceKm * p.perKm), p.min);
   };
 
-  const useCurrentLocation = async () => {
+  const useCurrentLocation = useCallback(async () => {
     setLocatingMe(true);
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -120,7 +136,16 @@ export default function VistaRidesScreen({ navigation }: Props) {
     } finally {
       setLocatingMe(false);
     }
-  };
+  }, []);
+
+  // Riders shouldn't have to tap a button to say "I'm here" — that's the
+  // overwhelmingly common case, so the pickup point locks in to the
+  // device's current location automatically, still editable via the
+  // pickup row below (see LocationSearchSheet's "Use my current location").
+  useEffect(() => {
+    useCurrentLocation();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const geocode = useCallback(async (address: string): Promise<Coords | null> => {
     try {
@@ -131,7 +156,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
     }
   }, []);
 
-  const openPaymentSheet = () => sheetRef.current?.present();
+  const openPaymentSheet = () => paymentSheetRef.current?.present();
 
   const openPickupSearch = () => {
     locationSheetRef.current?.present({ field: 'pickup', pickup, dropoff });
@@ -139,6 +164,27 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const openDropoffSearch = () => {
     locationSheetRef.current?.present({ field: 'dropoff', pickup, dropoff });
   };
+
+  // Once a destination is chosen there's a real fare to show and a vehicle
+  // to pick — pull the sheet up further so that content isn't cramped, and
+  // do it automatically rather than making the rider drag it themselves.
+  useEffect(() => {
+    if (dropoffCoords) bookingSheetRef.current?.snapToIndex(1);
+  }, [dropoffCoords]);
+
+  const mapRegion = useMemo(() => {
+    if (pickupCoords && dropoffCoords) {
+      const latitude = (pickupCoords.lat + dropoffCoords.lat) / 2;
+      const longitude = (pickupCoords.lng + dropoffCoords.lng) / 2;
+      const latitudeDelta = Math.max(Math.abs(pickupCoords.lat - dropoffCoords.lat) * 1.8, 0.03);
+      const longitudeDelta = Math.max(Math.abs(pickupCoords.lng - dropoffCoords.lng) * 1.8, 0.03);
+      return { latitude, longitude, latitudeDelta, longitudeDelta };
+    }
+    if (pickupCoords) {
+      return { latitude: pickupCoords.lat, longitude: pickupCoords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 };
+    }
+    return DEFAULT_REGION;
+  }, [pickupCoords, dropoffCoords]);
 
   const handleConfirm = async () => {
     if (!user) {
@@ -237,137 +283,209 @@ export default function VistaRidesScreen({ navigation }: Props) {
     );
   }
 
+  const hasDestination = !!dropoffCoords;
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: '#FFFFFF' }} edges={['bottom']}>
-      <View style={{ height: 200, marginHorizontal: spacing.md, marginTop: spacing.sm, borderRadius: radius.card, overflow: 'hidden' }}>
-        <PlatformMap
-          style={{ flex: 1 }}
-          initialRegion={{
-            latitude: pickupCoords?.lat ?? 0.3476,
-            longitude: pickupCoords?.lng ?? 32.5825, // Kampala
-            latitudeDelta: 0.08,
-            longitudeDelta: 0.08,
-          }}
-          region={
-            pickupCoords
-              ? { latitude: pickupCoords.lat, longitude: pickupCoords.lng, latitudeDelta: 0.05, longitudeDelta: 0.05 }
-              : undefined
-          }
-          markers={[
-            ...(pickupCoords ? [{ id: 'pickup', latitude: pickupCoords.lat, longitude: pickupCoords.lng, pinColor: colors.gold, title: 'Pickup' }] : []),
-            ...(dropoffCoords ? [{ id: 'dropoff', latitude: dropoffCoords.lat, longitude: dropoffCoords.lng, pinColor: colors.navy, title: 'Drop-off' }] : []),
-          ]}
-        />
-      </View>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <PlatformMap
+        style={styles.mapFill}
+        initialRegion={DEFAULT_REGION}
+        region={mapRegion}
+        markers={[
+          ...(pickupCoords ? [{ id: 'pickup', latitude: pickupCoords.lat, longitude: pickupCoords.lng, pinColor: colors.gold, title: 'Pickup' }] : []),
+          ...(dropoffCoords ? [{ id: 'dropoff', latitude: dropoffCoords.lat, longitude: dropoffCoords.lng, pinColor: colors.navy, title: 'Drop-off' }] : []),
+        ]}
+      />
 
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }} keyboardShouldPersistTaps="handled">
-        <VISTACard style={{ gap: spacing.sm }}>
-          <Pressable onPress={openPickupSearch} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Ionicons name="radio-button-on" size={16} color={colors.gold} />
-            <Text
-              style={{ flex: 1, fontSize: 15, color: pickup ? colors.textPrimary : colors.textSecondary }}
-              numberOfLines={1}
-            >
-              {pickup || 'Pickup location'}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-          </Pressable>
-          <Pressable onPress={useCurrentLocation} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-            <Ionicons name="locate" size={14} color={colors.navy} />
-            <Text style={{ fontSize: 12, color: colors.navy, fontWeight: '600' }}>
-              {locatingMe ? 'Finding you…' : 'Use my current location'}
-            </Text>
-          </Pressable>
-          <Pressable onPress={openDropoffSearch} style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <Ionicons name="location" size={16} color={colors.navy} />
-            <Text
-              style={{ flex: 1, fontSize: 15, color: dropoff ? colors.textPrimary : colors.textSecondary }}
-              numberOfLines={1}
-            >
-              {dropoff || 'Drop-off location'}
-            </Text>
-            <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
-          </Pressable>
-        </VISTACard>
+      <Pressable
+        onPress={() => navigation.goBack()}
+        hitSlop={8}
+        style={{
+          position: 'absolute',
+          top: insets.top + spacing.sm,
+          left: spacing.md,
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: colors.background,
+          alignItems: 'center',
+          justifyContent: 'center',
+          ...shadows.card,
+        }}
+      >
+        <Ionicons name="arrow-back" size={22} color={colors.navy} />
+      </Pressable>
 
-        <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
-          Choose a vehicle
-        </Text>
-        {VEHICLES.map((v) => (
-          <Pressable key={v.key} onPress={() => setVehicle(v.key)}>
-            <VISTACard style={vehicle === v.key ? { borderWidth: 2, borderColor: colors.navy } : undefined}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                <View style={{ width: 36, alignItems: 'center' }}>
-                  {v.iconFamily === 'mci' ? (
-                    <MaterialCommunityIcons name={v.icon as any} size={26} color={colors.navy} />
-                  ) : (
-                    <Ionicons name={v.icon as any} size={26} color={colors.navy} />
-                  )}
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{v.label}</Text>
-                  <Text style={{ fontSize: 12, color: colors.textSecondary }}>{v.sub}</Text>
-                </View>
-                <View style={{ alignItems: 'flex-end', gap: 2 }}>
-                  <Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>
-                    {distanceKm > 0 ? `UGX ${fareFor(v.key).toLocaleString()}` : `From ${pricingByVehicle[v.key].min.toLocaleString()}`}
+      <BottomSheet
+        ref={bookingSheetRef}
+        index={0}
+        snapPoints={hasDestination ? ['46%', '90%'] : ['32%', '58%']}
+        enableDynamicSizing={false}
+        backgroundStyle={{ backgroundColor: colors.background }}
+        handleIndicatorStyle={{ backgroundColor: colors.border, width: 40 }}
+        style={shadows.card}
+      >
+        <BottomSheetScrollView
+          contentContainerStyle={{ padding: spacing.md, gap: spacing.md, paddingBottom: spacing.xxl }}
+          keyboardShouldPersistTaps="handled"
+        >
+          {!hasDestination ? (
+            <>
+              <Text style={{ fontSize: 20, fontWeight: '700', color: colors.navy }}>Where would you like to go?</Text>
+
+              <VISTACard style={{ gap: 0, padding: 0, overflow: 'hidden' }}>
+                <Pressable
+                  onPress={openPickupSearch}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.md }}
+                >
+                  <Ionicons name="radio-button-on" size={16} color={colors.gold} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 11, color: colors.textSecondary }}>
+                      {locatingMe ? 'Finding you…' : 'Pickup'}
+                    </Text>
+                    <Text style={{ fontSize: 15, color: colors.textPrimary, fontWeight: '600' }} numberOfLines={1}>
+                      {pickup || 'Set pickup location'}
+                    </Text>
+                  </View>
+                  <Ionicons name="pencil" size={15} color={colors.textSecondary} />
+                </Pressable>
+
+                <View style={{ height: 1, backgroundColor: colors.border, marginLeft: spacing.md + 26 }} />
+
+                <Pressable
+                  onPress={openDropoffSearch}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 10, padding: spacing.md }}
+                >
+                  <Ionicons name="search" size={16} color={colors.navy} />
+                  <Text
+                    style={{ flex: 1, fontSize: 15, color: dropoff ? colors.textPrimary : colors.textSecondary, fontWeight: dropoff ? '600' : '400' }}
+                    numberOfLines={1}
+                  >
+                    {dropoff || 'Where would you like to go?'}
                   </Text>
-                  {vehicle === v.key ? <Ionicons name="checkmark-circle" size={18} color={colors.navy} /> : null}
+                  <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                </Pressable>
+              </VISTACard>
+            </>
+          ) : (
+            <>
+              <Pressable onPress={openDropoffSearch}>
+                <VISTACard style={{ gap: spacing.xs }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Ionicons name="radio-button-on" size={12} color={colors.gold} />
+                    <Text style={{ flex: 1, fontSize: 13, color: colors.textSecondary }} numberOfLines={1}>
+                      {pickup}
+                    </Text>
+                  </View>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Ionicons name="location" size={14} color={colors.navy} />
+                    <Text style={{ flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '700' }} numberOfLines={1}>
+                      {dropoff}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.navy, fontWeight: '600' }}>Change</Text>
+                  </View>
+                </VISTACard>
+              </Pressable>
+
+              {durationMinutes > 0 && (
+                <View
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 8,
+                    alignSelf: 'flex-start',
+                    backgroundColor: '#F2F2F7',
+                    borderRadius: radius.tag,
+                    paddingHorizontal: 10,
+                    paddingVertical: 6,
+                  }}
+                >
+                  <Ionicons name="time-outline" size={14} color={colors.navy} />
+                  <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>
+                    Arrive by {formatEta(durationMinutes)} · {distanceKm.toFixed(1)} km
+                  </Text>
                 </View>
-              </View>
-            </VISTACard>
-          </Pressable>
-        ))}
+              )}
 
-        {vehicle !== 'boda' && (
-          <Pressable
-            onPress={() => setFemaleDriver((v) => !v)}
-            style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}
-          >
-            <Text style={{ fontSize: 14, color: colors.textPrimary }}>Request a female driver</Text>
-            <Ionicons name={femaleDriver ? 'toggle' : 'toggle-outline'} size={30} color={femaleDriver ? colors.gold : '#C7C7CC'} />
-          </Pressable>
-        )}
+              <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Choose a vehicle
+              </Text>
+              {VEHICLES.map((v) => (
+                <Pressable key={v.key} onPress={() => setVehicle(v.key)}>
+                  <VISTACard style={vehicle === v.key ? { borderWidth: 2, borderColor: colors.navy } : undefined}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                      <View style={{ width: 36, alignItems: 'center' }}>
+                        {v.iconFamily === 'mci' ? (
+                          <MaterialCommunityIcons name={v.icon as any} size={26} color={colors.navy} />
+                        ) : (
+                          <Ionicons name={v.icon as any} size={26} color={colors.navy} />
+                        )}
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{v.label}</Text>
+                        <Text style={{ fontSize: 12, color: colors.textSecondary }}>{v.sub}</Text>
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                        <Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>
+                          UGX {fareFor(v.key).toLocaleString()}
+                        </Text>
+                        {vehicle === v.key ? <Ionicons name="checkmark-circle" size={18} color={colors.navy} /> : null}
+                      </View>
+                    </View>
+                  </VISTACard>
+                </Pressable>
+              ))}
 
-        <Pressable onPress={openPaymentSheet}>
-          <VISTACard>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-              <View>
-                <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>Payment method</Text>
-                <Text style={{ fontSize: 15, color: colors.textPrimary, fontWeight: '600' }}>{selectedPaymentLabel}</Text>
-              </View>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
-                <Text style={{ fontSize: 13, color: colors.navy, fontWeight: '600' }}>Change</Text>
-                <Ionicons name="chevron-forward" size={16} color={colors.navy} />
-              </View>
-            </View>
-          </VISTACard>
-        </Pressable>
+              {vehicle !== 'boda' && (
+                <Pressable
+                  onPress={() => setFemaleDriver((v) => !v)}
+                  style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 }}
+                >
+                  <Text style={{ fontSize: 14, color: colors.textPrimary }}>Request a female driver</Text>
+                  <Ionicons name={femaleDriver ? 'toggle' : 'toggle-outline'} size={30} color={femaleDriver ? colors.gold : '#C7C7CC'} />
+                </Pressable>
+              )}
 
-        <VISTACard>
-          <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-            <Text style={{ fontSize: 14, color: colors.textSecondary }}>Estimated fare</Text>
-            <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>
-              UGX {totalUgx.toLocaleString()}
-            </Text>
-          </View>
-          <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
-            ≈ USD {totalUsd} · confirmed once a driver accepts
-          </Text>
-        </VISTACard>
-      </ScrollView>
+              <Pressable onPress={openPaymentSheet}>
+                <VISTACard>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View>
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginBottom: 2 }}>Payment method</Text>
+                      <Text style={{ fontSize: 15, color: colors.textPrimary, fontWeight: '600' }}>{selectedPaymentLabel}</Text>
+                    </View>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
+                      <Text style={{ fontSize: 13, color: colors.navy, fontWeight: '600' }}>Change</Text>
+                      <Ionicons name="chevron-forward" size={16} color={colors.navy} />
+                    </View>
+                  </View>
+                </VISTACard>
+              </Pressable>
 
-      <View style={{ padding: spacing.md, borderTopWidth: 1, borderTopColor: colors.border }}>
-        <VISTAButton
-          title={submitting ? 'Requesting...' : `Request Ride — UGX ${totalUgx.toLocaleString()}`}
-          variant="accent"
-          loading={submitting}
-          onPress={handleConfirm}
-        />
-      </View>
+              <VISTACard>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <Text style={{ fontSize: 14, color: colors.textSecondary }}>Estimated fare</Text>
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: colors.navy }}>
+                    UGX {totalUgx.toLocaleString()}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 11, color: colors.textSecondary, marginTop: 2 }}>
+                  ≈ USD {totalUsd} · confirmed once a driver accepts
+                </Text>
+              </VISTACard>
+
+              <VISTAButton
+                title={submitting ? 'Requesting...' : `Request Ride — UGX ${totalUgx.toLocaleString()}`}
+                variant="accent"
+                loading={submitting}
+                onPress={handleConfirm}
+              />
+            </>
+          )}
+        </BottomSheetScrollView>
+      </BottomSheet>
 
       <BottomSheetModal
-        ref={sheetRef}
+        ref={paymentSheetRef}
         snapPoints={['40%']}
         backdropComponent={(props) => <BottomSheetBackdrop {...props} disappearsOnIndex={-1} appearsOnIndex={0} />}
       >
@@ -380,7 +498,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
               key={m.key}
               onPress={() => {
                 setPayMethod(m.key);
-                sheetRef.current?.dismiss();
+                paymentSheetRef.current?.dismiss();
               }}
               style={{ flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 12 }}
             >
@@ -405,6 +523,6 @@ export default function VistaRidesScreen({ navigation }: Props) {
           }
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }

@@ -12,11 +12,15 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Swipeable } from 'react-native-gesture-handler';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../lib/theme';
 
 const HERE_API_KEY = process.env.EXPO_PUBLIC_HERE_API_KEY;
+const HISTORY_KEY = 'vista_location_history_v1';
+const MAX_HISTORY = 8;
 
 // HERE's Autosuggest requires one of `at` / `in=bbox` / `in=circle` / `in=ring`
 // — there's no plain country-code filter. A generous circle around Kampala
@@ -70,11 +74,25 @@ async function fetchPredictions(query: string): Promise<Prediction[]> {
     });
 }
 
+async function loadHistory(): Promise<Prediction[]> {
+  try {
+    const raw = await AsyncStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveHistory(entries: Prediction[]) {
+  AsyncStorage.setItem(HISTORY_KEY, JSON.stringify(entries)).catch(() => {});
+}
+
 /**
  * A dedicated full-screen Pickup & Drop-off page, styled after the
- * ride-hailing pattern used across East Africa (SafeBoda, Uber): both
- * fields visible together with a connecting dot/line, the active field
- * editable, results as a plain list below.
+ * ride-hailing pattern used across East Africa (SafeBoda, Uber, Faras):
+ * both fields visible together with a connecting dot/line, the active
+ * field editable, results as a plain list below — recently-used places
+ * when the field is empty, live search results once typing starts.
  *
  * Earlier this was an inline dropdown, then a BottomSheetModal — both put
  * the results list in a partial-height container fighting the keyboard and
@@ -91,11 +109,16 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
   const [dropoffValue, setDropoffValue] = useState('');
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
+  const [history, setHistory] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(false);
   const [geocodingRaw, setGeocodingRaw] = useState(false);
   const pickupInputRef = useRef<TextInput>(null);
   const dropoffInputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    loadHistory().then(setHistory);
+  }, []);
 
   useImperativeHandle(ref, () => ({
     present: ({ field: initialField, pickup, dropoff }) => {
@@ -137,8 +160,26 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
 
   const close = () => setVisible(false);
 
-  const applySelection = (description: string, coords: PlaceCoords) => {
+  const remember = (entry: Prediction) => {
+    setHistory((prev) => {
+      const deduped = prev.filter((h) => h.title !== entry.title || h.sub !== entry.sub);
+      const next = [entry, ...deduped].slice(0, MAX_HISTORY);
+      saveHistory(next);
+      return next;
+    });
+  };
+
+  const forgetHistoryEntry = (id: string) => {
+    setHistory((prev) => {
+      const next = prev.filter((h) => h.id !== id);
+      saveHistory(next);
+      return next;
+    });
+  };
+
+  const applySelection = (description: string, coords: PlaceCoords, forHistory?: Prediction) => {
     onSelect(field, { description, coords });
+    if (forHistory) remember(forHistory);
     if (field === 'pickup') {
       setPickupValue(description);
       switchField('dropoff');
@@ -149,7 +190,7 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
   };
 
   const select = (p: Prediction) => {
-    applySelection(p.sub ? `${p.title}, ${p.sub}` : p.title, { lat: p.lat, lng: p.lng });
+    applySelection(p.sub ? `${p.title}, ${p.sub}` : p.title, { lat: p.lat, lng: p.lng }, p);
   };
 
   // Search coverage in Uganda isn't complete — a real place someone knows
@@ -165,13 +206,23 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
         Alert.alert('Location not found', "We couldn't place that address on the map. Please try a nearby landmark instead.");
         return;
       }
-      applySelection(query.trim(), { lat: results[0].latitude, lng: results[0].longitude });
+      const trimmed = query.trim();
+      applySelection(trimmed, { lat: results[0].latitude, lng: results[0].longitude }, {
+        id: `typed-${Date.now()}`,
+        title: trimmed,
+        sub: '',
+        lat: results[0].latitude,
+        lng: results[0].longitude,
+      });
     } catch {
       Alert.alert('Location not found', "We couldn't place that address on the map. Please try a nearby landmark instead.");
     } finally {
       setGeocodingRaw(false);
     }
   };
+
+  const isSearching = query.trim().length >= 3;
+  const listData = isSearching ? predictions : history;
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={close}>
@@ -244,7 +295,7 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
                       ref={dropoffInputRef}
                       value={query}
                       onChangeText={setQuery}
-                      placeholder="Where to?"
+                      placeholder="Where would you like to go?"
                       placeholderTextColor={colors.textSecondary}
                       style={{ flex: 1, fontSize: 15, color: colors.textPrimary }}
                       returnKeyType="search"
@@ -252,7 +303,7 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
                   ) : (
                     <Pressable onPress={() => switchField('dropoff')} style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
                       <Text style={{ flex: 1, fontSize: 15, color: dropoffValue ? colors.textPrimary : colors.textSecondary }} numberOfLines={1}>
-                        {dropoffValue || 'Where to?'}
+                        {dropoffValue || 'Where would you like to go?'}
                       </Text>
                     </Pressable>
                   )}
@@ -277,40 +328,68 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
 
           <View style={{ height: 1, backgroundColor: colors.border }} />
 
+          {!isSearching && history.length > 0 && (
+            <View style={{ paddingHorizontal: spacing.md, paddingTop: spacing.sm, flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+              <Ionicons name="time-outline" size={14} color={colors.textSecondary} />
+              <Text style={{ fontSize: 12, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+                Recent · swipe to remove
+              </Text>
+            </View>
+          )}
+
           <FlatList
-            data={predictions}
+            data={listData}
             keyExtractor={(item) => item.id}
             keyboardShouldPersistTaps="handled"
             contentContainerStyle={{ paddingHorizontal: spacing.md, paddingTop: spacing.xs, paddingBottom: spacing.xl }}
-            renderItem={({ item }) => (
-              <Pressable
-                onPress={() => select(item)}
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  gap: 12,
-                  paddingVertical: 12,
-                  borderBottomWidth: 1,
-                  borderBottomColor: colors.border,
-                }}
-              >
-                <Ionicons name="location-outline" size={18} color={colors.textSecondary} />
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }} numberOfLines={1}>
-                    {item.title}
-                  </Text>
-                  {!!item.sub && (
-                    <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
-                      {item.sub}
+            renderItem={({ item }) => {
+              const row = (
+                <Pressable
+                  onPress={() => select(item)}
+                  style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: 12,
+                    paddingVertical: 12,
+                    backgroundColor: colors.background,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                >
+                  <Ionicons name={isSearching ? 'location-outline' : 'time-outline'} size={18} color={colors.textSecondary} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 15, fontWeight: '600', color: colors.textPrimary }} numberOfLines={1}>
+                      {item.title}
                     </Text>
+                    {!!item.sub && (
+                      <Text style={{ fontSize: 12, color: colors.textSecondary, marginTop: 1 }} numberOfLines={1}>
+                        {item.sub}
+                      </Text>
+                    )}
+                  </View>
+                  <Ionicons name="arrow-redo-outline" size={16} color={colors.textSecondary} />
+                </Pressable>
+              );
+              if (isSearching) return row;
+              return (
+                <Swipeable
+                  renderRightActions={() => (
+                    <Pressable
+                      onPress={() => forgetHistoryEntry(item.id)}
+                      style={{ backgroundColor: colors.error, justifyContent: 'center', alignItems: 'center', width: 72 }}
+                    >
+                      <Ionicons name="trash-outline" size={18} color="#FFFFFF" />
+                      <Text style={{ color: '#FFFFFF', fontSize: 11, fontWeight: '700', marginTop: 2 }}>Remove</Text>
+                    </Pressable>
                   )}
-                </View>
-                <Ionicons name="arrow-redo-outline" size={16} color={colors.textSecondary} />
-              </Pressable>
-            )}
+                >
+                  {row}
+                </Swipeable>
+              );
+            }}
             ListEmptyComponent={
               !loading ? (
-                query.trim().length >= 3 ? (
+                isSearching ? (
                   <View style={{ marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm }}>
                     <Text style={{ textAlign: 'center', color: colors.textSecondary }}>
                       No matches found for "{query.trim()}"
@@ -339,7 +418,9 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
                     </Pressable>
                   </View>
                 ) : (
-                  <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: spacing.lg }}>Start typing to search</Text>
+                  <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: spacing.lg }}>
+                    Start typing to search
+                  </Text>
                 )
               ) : null
             }
