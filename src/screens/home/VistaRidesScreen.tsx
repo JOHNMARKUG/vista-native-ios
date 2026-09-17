@@ -75,21 +75,32 @@ export default function VistaRidesScreen({ navigation }: Props) {
     navigation.setOptions({ headerShown: !bookedRef });
   }, [navigation, bookedRef]);
 
-  const vehiclePricing = useMemo(() => {
+  const pricingByVehicle = useMemo(() => {
     const map: Record<VehicleKey, { base: number; perKm: number; min: number }> = {
       boda: { base: prices.vista_boda_base, perKm: prices.vista_boda_per_km, min: prices.vista_boda_min },
       standard: { base: prices.vista_std_base, perKm: prices.vista_std_per_km, min: prices.vista_std_min },
       premium: { base: prices.vista_prem_base, perKm: prices.vista_prem_per_km, min: prices.vista_prem_min },
       intercity: { base: prices.vista_inter_base, perKm: prices.vista_inter_per_km, min: prices.vista_inter_min },
     };
-    return map[vehicle];
-  }, [vehicle, prices]);
+    return map;
+  }, [prices]);
+
+  const vehiclePricing = pricingByVehicle[vehicle];
 
   const distanceKm = pickupCoords && dropoffCoords ? haversineKm(pickupCoords, dropoffCoords) : 0;
   const distanceFare = Math.round(distanceKm * vehiclePricing.perKm);
   const totalUgx = Math.max(vehiclePricing.base + distanceFare, vehiclePricing.min);
   const totalUsd = Math.round((totalUgx / prices.ugx_rate) * 100) / 100;
   const durationMinutes = distanceKm > 0 ? Math.round((distanceKm / 30) * 60) : 0; // ~30km/h urban average
+
+  // Faras/Bolt/Uber all show a live fare on every option in the list, not
+  // just the one currently selected — so riders can compare before picking
+  // rather than tapping through each one. Same formula as the summary
+  // total below, just evaluated per vehicle type.
+  const fareFor = (key: VehicleKey) => {
+    const p = pricingByVehicle[key];
+    return Math.max(p.base + Math.round(distanceKm * p.perKm), p.min);
+  };
 
   const useCurrentLocation = async () => {
     setLocatingMe(true);
@@ -297,7 +308,12 @@ export default function VistaRidesScreen({ navigation }: Props) {
                   <Text style={{ fontSize: 15, fontWeight: '700', color: colors.navy }}>{v.label}</Text>
                   <Text style={{ fontSize: 12, color: colors.textSecondary }}>{v.sub}</Text>
                 </View>
-                {vehicle === v.key ? <Ionicons name="checkmark-circle" size={22} color={colors.navy} /> : null}
+                <View style={{ alignItems: 'flex-end', gap: 2 }}>
+                  <Text style={{ fontSize: 14, fontWeight: '800', color: colors.navy }}>
+                    {distanceKm > 0 ? `UGX ${fareFor(v.key).toLocaleString()}` : `From ${pricingByVehicle[v.key].min.toLocaleString()}`}
+                  </Text>
+                  {vehicle === v.key ? <Ionicons name="checkmark-circle" size={18} color={colors.navy} /> : null}
+                </View>
               </View>
             </VISTACard>
           </Pressable>

@@ -1,6 +1,7 @@
 import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -11,6 +12,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Location from 'expo-location';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, radius, spacing } from '../lib/theme';
 
@@ -90,6 +92,7 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
   const [query, setQuery] = useState('');
   const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(false);
+  const [geocodingRaw, setGeocodingRaw] = useState(false);
   const pickupInputRef = useRef<TextInput>(null);
   const dropoffInputRef = useRef<TextInput>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -134,15 +137,39 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
 
   const close = () => setVisible(false);
 
-  const select = (p: Prediction) => {
-    const description = p.sub ? `${p.title}, ${p.sub}` : p.title;
-    onSelect(field, { description, coords: { lat: p.lat, lng: p.lng } });
+  const applySelection = (description: string, coords: PlaceCoords) => {
+    onSelect(field, { description, coords });
     if (field === 'pickup') {
       setPickupValue(description);
       switchField('dropoff');
     } else {
       setDropoffValue(description);
       close();
+    }
+  };
+
+  const select = (p: Prediction) => {
+    applySelection(p.sub ? `${p.title}, ${p.sub}` : p.title, { lat: p.lat, lng: p.lng });
+  };
+
+  // Search coverage in Uganda isn't complete — a real place someone knows
+  // by name can come back with zero results. Without this, that's a dead
+  // end: nothing in the list is tappable, so there's no way to book to or
+  // from that address at all. Falls back to the device's own geocoder,
+  // which draws on a different, sometimes better-populated map dataset.
+  const useTypedAddress = async () => {
+    setGeocodingRaw(true);
+    try {
+      const results = await Location.geocodeAsync(query);
+      if (!results[0]) {
+        Alert.alert('Location not found', "We couldn't place that address on the map. Please try a nearby landmark instead.");
+        return;
+      }
+      applySelection(query.trim(), { lat: results[0].latitude, lng: results[0].longitude });
+    } catch {
+      Alert.alert('Location not found', "We couldn't place that address on the map. Please try a nearby landmark instead.");
+    } finally {
+      setGeocodingRaw(false);
     }
   };
 
@@ -283,9 +310,37 @@ const LocationSearchSheet = forwardRef<LocationSearchSheetRef, Props>(function L
             )}
             ListEmptyComponent={
               !loading ? (
-                <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: spacing.lg }}>
-                  {query.trim().length >= 3 ? 'No matches found' : 'Start typing to search'}
-                </Text>
+                query.trim().length >= 3 ? (
+                  <View style={{ marginTop: spacing.lg, alignItems: 'center', gap: spacing.sm }}>
+                    <Text style={{ textAlign: 'center', color: colors.textSecondary }}>
+                      No matches found for "{query.trim()}"
+                    </Text>
+                    <Pressable
+                      onPress={useTypedAddress}
+                      disabled={geocodingRaw}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        gap: 8,
+                        paddingVertical: 10,
+                        paddingHorizontal: 16,
+                        borderRadius: radius.button,
+                        borderWidth: 1,
+                        borderColor: colors.navy,
+                        opacity: geocodingRaw ? 0.6 : 1,
+                      }}
+                    >
+                      {geocodingRaw ? (
+                        <ActivityIndicator size="small" color={colors.navy} />
+                      ) : (
+                        <Ionicons name="pin-outline" size={16} color={colors.navy} />
+                      )}
+                      <Text style={{ fontSize: 14, fontWeight: '600', color: colors.navy }}>Use this address anyway</Text>
+                    </Pressable>
+                  </View>
+                ) : (
+                  <Text style={{ textAlign: 'center', color: colors.textSecondary, marginTop: spacing.lg }}>Start typing to search</Text>
+                )
               ) : null
             }
           />
