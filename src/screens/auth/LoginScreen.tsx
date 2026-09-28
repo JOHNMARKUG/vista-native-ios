@@ -56,7 +56,7 @@ export default function LoginScreen({ navigation }: Props) {
   const redirectUri = useMemo(
     () =>
       AuthSession.makeRedirectUri({
-        scheme: 'com.googleusercontent.apps.444032839313-0lpvt3pcllv30nbvmeldgh8u3poadppf',
+        scheme: `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.split('.')[0]}`,
         path: 'oauthredirect',
       }),
     []

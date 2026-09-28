@@ -9,6 +9,7 @@
     "scheme": "vistatransport",
     "ios": {
       "bundleIdentifier": "ug.vista.transport",
+      "icon": "./assets/icon-ios.png",
       "buildNumber": "1",
       "supportsTablet": false,
       "usesAppleSignIn": true,
@@ -20,7 +21,7 @@
         "ITSAppUsesNonExemptEncryption": false,
         "CFBundleURLTypes": [
           {
-            "CFBundleURLSchemes": ["com.googleusercontent.apps.444032839313-0lpvt3pcllv30nbvmeldgh8u3poadppf"]
+            "CFBundleURLSchemes": ["com.googleusercontent.apps.1075873555121-ir5f76lmr994qscta9tg9ckuqu65v22a"]
           }
         ]
       }

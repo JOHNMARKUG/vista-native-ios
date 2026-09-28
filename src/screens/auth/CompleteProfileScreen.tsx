@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -13,21 +13,27 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTAInput from '../../components/VISTAInput';
 import { colors, spacing } from '../../lib/theme';
 
-const schema = z.object({
-  first_name: z.string().trim().min(1, 'Please enter your first name'),
-  last_name: z.string().trim().min(1, 'Please enter your last name'),
+const baseFields = {
   referral_code: z.string().trim().optional(),
   phone: z.string().trim().min(7, 'Please enter a valid phone number'),
   emergency_name: z.string().trim().optional(),
   emergency_phone: z.string().trim().optional(),
+};
+const fullSchema = z.object({
+  first_name: z.string().trim().min(1, 'Please enter your first name'),
+  last_name: z.string().trim().min(1, 'Please enter your last name'),
+  ...baseFields,
 });
-type FormData = z.infer<typeof schema>;
+// Sign in with Apple already supplies the user's name and email, so Apple's
+// design rules (Guideline 4) forbid asking for them again — names are optional here.
+const appleSchema = z.object({
+  first_name: z.string().trim().optional(),
+  last_name: z.string().trim().optional(),
+  ...baseFields,
+});
+type FormData = z.infer<typeof fullSchema>;
 
-const STEP_FIELDS: (keyof FormData)[][] = [
-  ['first_name', 'last_name', 'referral_code'],
-  ['phone'],
-  ['emergency_name', 'emergency_phone'],
-];
+type StepKey = 'name' | 'phone' | 'emergency';
 
 export default function CompleteProfileScreen() {
   const { t } = useTranslation();
@@ -36,13 +42,27 @@ export default function CompleteProfileScreen() {
   const [loading, setLoading] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  const meta = session?.user?.app_metadata as { provider?: string; providers?: string[] } | undefined;
+  const isApple = meta?.provider === 'apple' || (meta?.providers ?? []).includes('apple');
+
+  const steps: StepKey[] = isApple ? ['phone', 'emergency'] : ['name', 'phone', 'emergency'];
+  const stepKey = steps[step];
+  const lastStep = steps.length - 1;
+  const stepFields: Record<StepKey, (keyof FormData)[]> = {
+    name: ['first_name', 'last_name', 'referral_code'],
+    phone: isApple ? ['phone', 'referral_code'] : ['phone'],
+    emergency: ['emergency_name', 'emergency_phone'],
+  };
+
+  const schema = useMemo(() => (isApple ? appleSchema : fullSchema), [isApple]);
+
   const {
     control,
     trigger,
     getValues,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as any,
     mode: 'onChange',
     defaultValues: {
       first_name: '',
@@ -66,7 +86,8 @@ export default function CompleteProfileScreen() {
     const payload = {
       id: session.user.id,
       email: session.user.email,
-      full_name: `${values.first_name.trim()} ${values.last_name.trim()}`.trim(),
+      // Apple users: keep whatever name Apple already gave us (may be empty) — never overwrite it.
+      ...(isApple ? {} : { full_name: `${values.first_name.trim()} ${values.last_name.trim()}`.trim() }),
       phone,
       preferred_language: 'English',
       emergency_contact_name: skipEmergency ? null : values.emergency_name || null,
@@ -109,11 +130,32 @@ export default function CompleteProfileScreen() {
   };
 
   const handleNext = async () => {
-    const fields = STEP_FIELDS[step];
-    const valid = await trigger(fields);
+    const valid = await trigger(stepFields[stepKey]);
     if (!valid) return;
-    if (step < 2) setStep(step + 1);
+    if (step < lastStep) setStep(step + 1);
   };
+
+  const referralInput = (
+    <>
+      <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 18 }}>
+        {t('profileSetup.referralCodeDesc')}
+      </Text>
+      <Controller
+        control={control}
+        name="referral_code"
+        render={({ field: { onChange, value, onBlur } }) => (
+          <VISTAInput
+            placeholder={t('profileSetup.referralPlaceholder')}
+            value={value}
+            onChangeText={(v) => onChange(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
+            onBlur={onBlur}
+            autoCapitalize="characters"
+            style={{ letterSpacing: 1 }}
+          />
+        )}
+      />
+    </>
+  );
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.navy }} edges={['top', 'bottom']}>
@@ -126,12 +168,12 @@ export default function CompleteProfileScreen() {
           <View style={{ width: 38 }} />
         )}
         <Text style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12, fontWeight: '600' }}>
-          {t('profileSetup.step')} {step + 1} / 3
+          {t('profileSetup.step')} {step + 1} / {steps.length}
         </Text>
       </View>
 
       <View style={{ flexDirection: 'row', justifyContent: 'center', gap: 8, marginBottom: spacing.xl }}>
-        {[0, 1, 2].map((i) => (
+        {steps.map((_, i) => (
           <View
             key={i}
             style={{
@@ -149,7 +191,7 @@ export default function CompleteProfileScreen() {
         contentContainerStyle={{ flexGrow: 1, paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md }}
         keyboardShouldPersistTaps="handled"
       >
-        {step === 0 && (
+        {stepKey === 'name' && (
           <>
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>{t('profileSetup.whatIsYourName')}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 20, marginBottom: spacing.sm }}>
@@ -183,27 +225,11 @@ export default function CompleteProfileScreen() {
                 />
               )}
             />
-            <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 18 }}>
-              {t('profileSetup.referralCodeDesc')}
-            </Text>
-            <Controller
-              control={control}
-              name="referral_code"
-              render={({ field: { onChange, value, onBlur } }) => (
-                <VISTAInput
-                  placeholder={t('profileSetup.referralPlaceholder')}
-                  value={value}
-                  onChangeText={(v) => onChange(v.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 11))}
-                  onBlur={onBlur}
-                  autoCapitalize="characters"
-                  style={{ letterSpacing: 1 }}
-                />
-              )}
-            />
+            {referralInput}
           </>
         )}
 
-        {step === 1 && (
+        {stepKey === 'phone' && (
           <>
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>{t('profileSetup.yourPhoneNumber')}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 20, marginBottom: spacing.sm }}>
@@ -228,10 +254,11 @@ export default function CompleteProfileScreen() {
             <Text style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, lineHeight: 18 }}>
               {t('profileSetup.includeCountryCode')}
             </Text>
+            {isApple && referralInput}
           </>
         )}
 
-        {step === 2 && (
+        {stepKey === 'emergency' && (
           <>
             <Text style={{ color: '#FFFFFF', fontSize: 24, fontWeight: '700' }}>{t('profileSetup.whoShouldWeCall')}</Text>
             <Text style={{ color: 'rgba(255,255,255,0.55)', fontSize: 14, lineHeight: 20, marginBottom: spacing.sm }}>
@@ -270,7 +297,7 @@ export default function CompleteProfileScreen() {
 
         <View style={{ flex: 1 }} />
 
-        {step < 2 ? (
+        {step < lastStep ? (
           <VISTAButton title={t('common.continue')} variant="accent" onPress={handleNext} />
         ) : (
           <>
