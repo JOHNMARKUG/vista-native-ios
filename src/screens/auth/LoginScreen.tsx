@@ -32,8 +32,10 @@ type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>;
 
 export default function LoginScreen({ navigation }: Props) {
   const { t } = useTranslation();
-  const { sendOtp, enterGuestMode, signInWithApple, completeGoogleSignIn } = useAuth();
+  const { sendOtp, enterGuestMode, signInWithApple, completeGoogleSignIn, signInWithPassword } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [passwordMode, setPasswordMode] = useState(false);
+  const [password, setPassword] = useState('');
   const [serverError, setServerError] = useState<string | null>(null);
   const [appleLoading, setAppleLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -110,6 +112,12 @@ export default function LoginScreen({ navigation }: Props) {
   const onSubmit = async ({ email }: FormData) => {
     setLoading(true);
     setServerError(null);
+    if (passwordMode) {
+      const { error: pwError } = await signInWithPassword(email, password);
+      setLoading(false);
+      if (pwError) setServerError('Incorrect email or password. Please try again.');
+      return;
+    }
     const { error } = await sendOtp(email);
     setLoading(false);
     if (error) {
@@ -160,7 +168,7 @@ export default function LoginScreen({ navigation }: Props) {
           Sign in to VISTA
         </Text>
         <Text style={{ color: colors.textSecondary, fontSize: 14, lineHeight: 20, marginBottom: spacing.xl }}>
-          Enter your email to receive a 6-digit code
+          {passwordMode ? 'Enter your email and password' : 'Enter your email to receive a 6-digit code'}
         </Text>
 
         <Controller
@@ -187,15 +195,52 @@ export default function LoginScreen({ navigation }: Props) {
           )}
         />
 
+        {passwordMode && (
+          <View style={{ marginTop: spacing.sm }}>
+            <VISTAInput
+              placeholder="Password"
+              value={password}
+              onChangeText={(text) => {
+                setPassword(text);
+                setServerError(null);
+              }}
+              secureTextEntry
+              autoCapitalize="none"
+              autoComplete="current-password"
+              textContentType="password"
+              returnKeyType="go"
+              onSubmitEditing={handleSubmit(onSubmit)}
+              leftIcon={<Ionicons name="lock-closed-outline" size={18} color={colors.navy} />}
+            />
+          </View>
+        )}
+
         <View style={{ height: spacing.md }} />
 
         <VISTAButton
-          title={loading ? t('auth.sendingCode') : t('auth.sendVerificationCode')}
+          title={
+            passwordMode
+              ? loading ? 'Signing in...' : 'Sign in'
+              : loading ? t('auth.sendingCode') : t('auth.sendVerificationCode')
+          }
           variant="accent"
           loading={loading}
-          disabled={!isValid}
+          disabled={!isValid || (passwordMode && password.length === 0)}
           onPress={handleSubmit(onSubmit)}
         />
+
+        <Pressable
+          onPress={() => {
+            setPasswordMode((v) => !v);
+            setPassword('');
+            setServerError(null);
+          }}
+          style={{ paddingTop: spacing.md, alignItems: 'center' }}
+        >
+          <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
+            {passwordMode ? 'Use an email code instead' : 'Sign in with a password (demo and App Review accounts)'}
+          </Text>
+        </Pressable>
 
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12, marginVertical: spacing.lg }}>
           <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />

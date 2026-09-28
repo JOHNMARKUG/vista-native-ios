@@ -35,6 +35,8 @@ type AuthContextValue = {
   exitGuestMode: () => void;
   sendOtp: (email: string) => Promise<{ error: string | null }>;
   verifyOtp: (email: string, token: string) => Promise<{ error: string | null; user: User | null }>;
+  /** For accounts that have a password (e.g. the App Review demo account). */
+  signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithApple: () => Promise<{ error: string | null; cancelled?: boolean }>;
   /** Finishes a Google sign-in once LoginScreen's expo-auth-session flow has an id_token. */
   completeGoogleSignIn: (idToken: string) => Promise<{ error: string | null }>;
@@ -137,6 +139,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: null, user: data.user };
   }, [fetchProfile]);
 
+  const signInWithPassword = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password,
+    });
+    if (error) return { error: error.message };
+    if (data.user) {
+      await ensureProfile(data.user.id, data.user.email ?? null);
+      await fetchProfile(data.user.id);
+    }
+    return { error: null };
+  }, [fetchProfile]);
+
   const signInWithApple = useCallback(async () => {
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -228,6 +243,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         exitGuestMode,
         sendOtp,
         verifyOtp,
+        signInWithPassword,
         signInWithApple,
         completeGoogleSignIn,
         signOut,
