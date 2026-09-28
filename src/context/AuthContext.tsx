@@ -38,7 +38,7 @@ type AuthContextValue = {
   /** For accounts that have a password (e.g. the App Review demo account). */
   signInWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   signInWithApple: () => Promise<{ error: string | null; cancelled?: boolean }>;
-  /** Finishes a Google sign-in once LoginScreen's expo-auth-session flow has an id_token. */
+  /** Finishes a Google sign-in once LoginScreen's GoogleSignin flow has an id_token. */
   completeGoogleSignIn: (idToken: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;

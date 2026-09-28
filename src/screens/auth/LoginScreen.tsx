@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
@@ -8,9 +8,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import * as AuthSession from 'expo-auth-session';
-import * as Google from 'expo-auth-session/providers/google';
-import * as WebBrowser from 'expo-web-browser';
+import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
@@ -19,9 +17,16 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTAInput from '../../components/VISTAInput';
 import { colors, radius, spacing } from '../../lib/theme';
 
-// Required once per app so a completed web-based auth session (Google's
-// consent screen) closes and hands control back to this screen.
-WebBrowser.maybeCompleteAuthSession();
+// Google's own SDK, not a hand-rolled browser redirect: Google deprecated
+// custom-URL-scheme OAuth redirects for iOS apps ("Custom URI schemes are no
+// longer supported due to the risk of app impersonation"), which is what
+// expo-auth-session's generic Google provider relied on — it kept failing
+// with "doesn't comply with Google's OAuth 2.0 policy" / 400 invalid_request
+// no matter how the redirect URI was formatted, because Google now rejects
+// that whole mechanism, not just a malformed one. GoogleSignin.configure's
+// iosClientId is the same reversed-scheme registration, still wired through
+// the @react-native-google-signin/google-signin config plugin in app.json.
+GoogleSignin.configure({ iosClientId: GOOGLE_IOS_CLIENT_ID });
 
 const schema = z.object({
   email: z.string().trim().toLowerCase().email('Please enter a valid email address'),
@@ -46,58 +51,6 @@ export default function LoginScreen({ navigation }: Props) {
   // rest of the screen be reviewed in Expo Go; a tap there fails gracefully
   // (see handleApple) instead of the button just never appearing.
   const showAppleButton = Platform.OS === 'ios';
-
-  // Google's iOS-type OAuth clients don't have a configurable "Authorized
-  // redirect URIs" list in Cloud Console — they only accept a redirect
-  // using the *reversed client ID* as the URL scheme, which is why this
-  // can't just be the app's own `vistatransport` scheme (that produced a
-  // real "doesn't comply with Google's OAuth 2.0 policy" 400 on a signed
-  // build). The matching CFBundleURLTypes entry is registered in app.json.
-  // Still resolves to an exp:// proxy URL automatically in Expo Go, no
-  // extra config needed for that case.
-  const redirectUri = useMemo(
-    () =>
-      AuthSession.makeRedirectUri({
-        scheme: `com.googleusercontent.apps.${GOOGLE_IOS_CLIENT_ID.split('.')[0]}`,
-        path: 'oauthredirect',
-      }),
-    []
-  );
-
-  const [request, response, promptAsync] = Google.useAuthRequest({
-    iosClientId: GOOGLE_IOS_CLIENT_ID,
-    // Only exercised in the web dev preview (Platform.select falls through to
-    // 'webClientId' there) — the shipped app is iOS-only, so this never
-    // needs to be a real, separately-registered web OAuth client.
-    webClientId: GOOGLE_IOS_CLIENT_ID,
-    redirectUri,
-  });
-
-  useEffect(() => {
-    if (!response) return;
-    if (response.type === 'success') {
-      const idToken = response.params?.id_token;
-      if (!idToken) {
-        setGoogleLoading(false);
-        Alert.alert('Sign in failed', 'Google did not return a sign-in token. Please try again.');
-        return;
-      }
-      completeGoogleSignIn(idToken).then(({ error }) => {
-        setGoogleLoading(false);
-        if (error) Alert.alert('Sign in failed', error);
-      });
-    } else if (response.type === 'error') {
-      setGoogleLoading(false);
-      Alert.alert(
-        'Sign in failed',
-        response.error?.message ??
-          'Google sign-in failed. If this is a 400 error, the OAuth consent screen may still be in "Testing" mode in Google Cloud Console — publish it or add this account as a test user.'
-      );
-    } else {
-      // 'cancel' / 'dismiss' — the user backed out, nothing to report.
-      setGoogleLoading(false);
-    }
-  }, [response, completeGoogleSignIn]);
 
   const {
     control,
@@ -145,9 +98,28 @@ export default function LoginScreen({ navigation }: Props) {
     }
   };
 
-  const handleGoogle = () => {
+  const handleGoogle = async () => {
     setGoogleLoading(true);
-    promptAsync();
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const response = await GoogleSignin.signIn();
+      if (!isSuccessResponse(response)) return; // user cancelled
+      const idToken = response.data.idToken;
+      if (!idToken) {
+        Alert.alert('Sign in failed', 'Google did not return a sign-in token. Please try again.');
+        return;
+      }
+      const { error } = await completeGoogleSignIn(idToken);
+      if (error) Alert.alert('Sign in failed', error);
+    } catch (err) {
+      if (isErrorWithCode(err) && err.code === statusCodes.SIGN_IN_CANCELLED) {
+        // user cancelled, nothing to report
+      } else {
+        Alert.alert('Sign in failed', (err as Error)?.message ?? 'Please try again.');
+      }
+    } finally {
+      setGoogleLoading(false);
+    }
   };
 
   return (
@@ -272,7 +244,7 @@ export default function LoginScreen({ navigation }: Props) {
               belonged to different apps side by side. */}
           <Pressable
             onPress={handleGoogle}
-            disabled={!request || googleLoading}
+            disabled={googleLoading}
             style={({ pressed }) => ({
               height: 52,
               borderRadius: radius.button,
@@ -281,7 +253,7 @@ export default function LoginScreen({ navigation }: Props) {
               alignItems: 'center',
               justifyContent: 'center',
               gap: 10,
-              opacity: pressed || googleLoading || !request ? 0.7 : 1,
+              opacity: pressed || googleLoading ? 0.7 : 1,
             })}
           >
             <Ionicons name="logo-google" size={18} color="#FFFFFF" />

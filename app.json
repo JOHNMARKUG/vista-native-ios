@@ -18,12 +18,7 @@
         "NSLocationAlwaysAndWhenInUseUsageDescription": "VISTA needs your location during trips to track your journey and share it with your driver.",
         "NSCameraUsageDescription": "VISTA needs camera access to take your profile photo.",
         "NSPhotoLibraryUsageDescription": "VISTA needs photo access to upload your profile photo.",
-        "ITSAppUsesNonExemptEncryption": false,
-        "CFBundleURLTypes": [
-          {
-            "CFBundleURLSchemes": ["com.googleusercontent.apps.1075873555121-ir5f76lmr994qscta9tg9ckuqu65v22a"]
-          }
-        ]
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -85,7 +80,12 @@
       "expo-image",
       "expo-localization",
       "expo-secure-store",
-      "expo-web-browser"
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.1075873555121-ir5f76lmr994qscta9tg9ckuqu65v22a"
+        }
+      ]
     ],
     "extra": {
       "eas": {
