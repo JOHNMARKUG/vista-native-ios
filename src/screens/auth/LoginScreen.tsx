@@ -235,10 +235,10 @@ export default function LoginScreen({ navigation }: Props) {
             setPassword('');
             setServerError(null);
           }}
-          style={{ paddingTop: spacing.md, alignItems: 'center' }}
+          style={{ paddingTop: spacing.sm, alignItems: 'center' }}
         >
-          <Text style={{ color: colors.navy, fontSize: 13, fontWeight: '600', textAlign: 'center' }}>
-            {passwordMode ? 'Use an email code instead' : 'Sign in with a password (demo and App Review accounts)'}
+          <Text style={{ color: colors.textSecondary, fontSize: 12, fontWeight: '600', textAlign: 'center' }}>
+            {passwordMode ? 'Use an email code instead' : 'Sign in with a password instead'}
           </Text>
         </Pressable>
 
@@ -255,7 +255,9 @@ export default function LoginScreen({ navigation }: Props) {
             // real signed build (a React Native styling bug this native
             // control can't have, since iOS draws it itself) — and Apple's
             // guidelines expect their own button for Sign in with Apple
-            // anyway, not a recreation of it.
+            // anyway, not a recreation of it. Kept above Google (Apple's
+            // guideline 4.8 wants it at least as prominent as other
+            // third-party sign-in options, never below them).
             <AppleAuthentication.AppleAuthenticationButton
               buttonType={AppleAuthentication.AppleAuthenticationButtonType.CONTINUE}
               buttonStyle={AppleAuthentication.AppleAuthenticationButtonStyle.BLACK}
@@ -265,15 +267,16 @@ export default function LoginScreen({ navigation }: Props) {
             />
           )}
 
+          {/* Styled to match the black Apple button above (same fill, height,
+              corner radius, white glyph) — the two used to look like they
+              belonged to different apps side by side. */}
           <Pressable
             onPress={handleGoogle}
             disabled={!request || googleLoading}
             style={({ pressed }) => ({
               height: 52,
               borderRadius: radius.button,
-              borderWidth: 1,
-              borderColor: colors.navy,
-              backgroundColor: '#FFFFFF',
+              backgroundColor: '#000000',
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'center',
@@ -281,8 +284,8 @@ export default function LoginScreen({ navigation }: Props) {
               opacity: pressed || googleLoading || !request ? 0.7 : 1,
             })}
           >
-            <Ionicons name="logo-google" size={18} color="#EA4335" />
-            <Text style={{ fontSize: 16, fontWeight: '600', color: colors.navy }}>Continue with Google</Text>
+            <Ionicons name="logo-google" size={18} color="#FFFFFF" />
+            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' }}>Continue with Google</Text>
           </Pressable>
         </View>
 
@@ -290,7 +293,7 @@ export default function LoginScreen({ navigation }: Props) {
           onPress={() => enterGuestMode()}
           style={{ paddingVertical: spacing.lg, alignItems: 'center' }}
         >
-          <Text style={{ color: colors.textSecondary, fontSize: 14, fontWeight: '500' }}>
+          <Text style={{ color: colors.textSecondary, fontSize: 13, fontWeight: '500' }}>
             {t('auth.browseWithoutAccount')}
           </Text>
         </Pressable>
