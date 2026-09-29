@@ -78,7 +78,10 @@ export default function ProfileScreen({ navigation }: Props) {
       contentContainerStyle={{ padding: spacing.md, gap: spacing.lg, paddingBottom: spacing.xxl }}
     >
       <Group>
-        <Pressable style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: spacing.md }}>
+        <Pressable
+          onPress={() => navigation.navigate('EditProfile')}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: 14, padding: spacing.md }}
+        >
           <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.navy, alignItems: 'center', justifyContent: 'center' }}>
             <Text style={{ fontSize: 22, fontWeight: '700', color: colors.gold }}>
               {profile?.full_name?.[0]?.toUpperCase() ?? 'U'}
@@ -88,6 +91,7 @@ export default function ProfileScreen({ navigation }: Props) {
             <Text style={{ fontSize: 17, fontWeight: '600', color: colors.textPrimary }}>{profile?.full_name ?? 'VISTA Traveler'}</Text>
             <Text style={{ fontSize: 13, color: colors.textSecondary, marginTop: 2 }}>{profile?.email ?? user?.email}</Text>
           </View>
+          <Ionicons name="chevron-forward" size={16} color="#C7C7CC" />
         </Pressable>
       </Group>
 
@@ -98,6 +102,8 @@ export default function ProfileScreen({ navigation }: Props) {
       </Group>
 
       <Group>
+        <MenuRow icon="create-outline" iconColor={colors.navy} label="Edit Profile" onPress={() => navigation.navigate('EditProfile')} />
+        <Divider />
         <MenuRow icon="person-outline" iconColor={colors.navy} label="Account Settings" onPress={() => navigation.navigate('Settings')} />
         <Divider />
         <MenuRow icon="card-outline" iconColor={colors.navy} label="Payment Methods" onPress={() => navigation.navigate('PaymentMethods')} />

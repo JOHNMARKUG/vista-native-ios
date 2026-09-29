@@ -16,6 +16,9 @@ import VISTAButton from '../../components/VISTAButton';
 import VISTACard from '../../components/VISTACard';
 import LocationSearchSheet, { type LocationSearchSheetRef } from '../../components/LocationSearchSheet';
 import BookingSuccess from '../../components/BookingSuccess';
+import SegmentedControl from '../../components/SegmentedControl';
+import DatePickerSheet, { type DatePickerSheetRef } from '../../components/DatePickerSheet';
+import { toLocalDateString } from '../../lib/date';
 import { PAYMENT_METHODS, paymentKeyFromLabel, type PaymentMethodKey } from '../../lib/paymentMethods';
 import { colors, radius, shadows, spacing } from '../../lib/theme';
 
@@ -54,8 +57,8 @@ function genRideRef() {
   return `VR-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
 }
 
-function formatEta(minutesFromNow: number) {
-  const d = new Date(Date.now() + minutesFromNow * 60000);
+function formatEta(minutesFromNow: number, from: Date = new Date()) {
+  const d = new Date(from.getTime() + minutesFromNow * 60000);
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 }
 
@@ -75,6 +78,8 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const [dropoffCoords, setDropoffCoords] = useState<Coords | null>(null);
   const [locatingMe, setLocatingMe] = useState(false);
   const [femaleDriver, setFemaleDriver] = useState(false);
+  const [mode, setMode] = useState<'now' | 'later'>('now');
+  const [scheduledFor, setScheduledFor] = useState(new Date());
   const [payMethod, setPayMethod] = useState<PaymentMethodKey>(() => paymentKeyFromLabel(profile?.preferred_payment_method));
   const [submitting, setSubmitting] = useState(false);
   const [bookedRef, setBookedRef] = useState<string | null>(null);
@@ -82,6 +87,7 @@ export default function VistaRidesScreen({ navigation }: Props) {
   const paymentSheetRef = useRef<BottomSheetModal>(null);
   const bookingSheetRef = useRef<BottomSheet>(null);
   const locationSheetRef = useRef<LocationSearchSheetRef>(null);
+  const dateSheetRef = useRef<DatePickerSheetRef>(null);
 
   useHideTabBar(navigation);
 
@@ -202,7 +208,8 @@ export default function VistaRidesScreen({ navigation }: Props) {
 
       const bookingRef = genRideRef();
       const isCash = payMethod === 'cash';
-      const rideStatus = isCash ? 'searching' : 'pending_payment';
+      const isScheduled = mode === 'later';
+      const rideStatus = isScheduled ? 'scheduled' : isCash ? 'searching' : 'pending_payment';
 
       const { data, error } = await supabase
         .from('vista_rides')
@@ -227,17 +234,25 @@ export default function VistaRidesScreen({ navigation }: Props) {
           female_driver_requested: femaleDriver,
           status: rideStatus,
           payment_status: isCash ? 'cash' : 'unpaid',
+          scheduled_date: isScheduled ? toLocalDateString(scheduledFor) : null,
+          scheduled_time: isScheduled
+            ? `${String(scheduledFor.getHours()).padStart(2, '0')}:${String(scheduledFor.getMinutes()).padStart(2, '0')}:00`
+            : null,
         })
         .select('*')
         .single();
 
       if (error) throw error;
 
-      supabase.functions
-        .invoke('notify-driver', {
-          body: { ride_id: data.id, pickup: pickup.trim(), dropoff: dropoff.trim(), total_ugx: totalUgx, vehicle_type: vehicle === 'boda' ? 'boda' : 'car' },
-        })
-        .catch(() => {});
+      // A scheduled ride shouldn't page a driver right now for a trip that
+      // might be days away — only immediate bookings try to find one live.
+      if (!isScheduled) {
+        supabase.functions
+          .invoke('notify-driver', {
+            body: { ride_id: data.id, pickup: pickup.trim(), dropoff: dropoff.trim(), total_ugx: totalUgx, vehicle_type: vehicle === 'boda' ? 'boda' : 'car' },
+          })
+          .catch(() => {});
+      }
 
       if (!isCash) {
         // Note: pesapal-initiate persists pesapal_transaction_id against the
@@ -272,8 +287,12 @@ export default function VistaRidesScreen({ navigation }: Props) {
   if (bookedRef) {
     return (
       <BookingSuccess
-        title="Ride requested!"
-        message="We're matching you with a nearby driver — track live progress from My Trips."
+        title={mode === 'later' ? 'Ride scheduled!' : 'Ride requested!'}
+        message={
+          mode === 'later'
+            ? `We'll match you with a driver closer to ${scheduledFor.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })} — track it from My Trips.`
+            : "We're matching you with a nearby driver — track live progress from My Trips."
+        }
         reference={bookedRef}
         onDone={() => {
           navigation.goBack();
@@ -402,9 +421,31 @@ export default function VistaRidesScreen({ navigation }: Props) {
                 >
                   <Ionicons name="time-outline" size={14} color={colors.navy} />
                   <Text style={{ fontSize: 13, fontWeight: '600', color: colors.navy }}>
-                    Arrive by {formatEta(durationMinutes)} · {distanceKm.toFixed(1)} km
+                    {mode === 'later'
+                      ? `Arrive by ${formatEta(durationMinutes, scheduledFor)} · ${distanceKm.toFixed(1)} km`
+                      : `Arrive by ${formatEta(durationMinutes)} · ${distanceKm.toFixed(1)} km`}
                   </Text>
                 </View>
+              )}
+
+              <SegmentedControl
+                segments={[
+                  { key: 'now', label: 'Book for now' },
+                  { key: 'later', label: 'Schedule' },
+                ]}
+                value={mode}
+                onChange={setMode}
+              />
+              {mode === 'later' && (
+                <Pressable onPress={() => dateSheetRef.current?.present(scheduledFor)}>
+                  <VISTACard style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+                    <Ionicons name="calendar-outline" size={18} color={colors.navy} />
+                    <Text style={{ flex: 1, fontSize: 15, color: colors.textPrimary, fontWeight: '600' }}>
+                      {scheduledFor.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </Text>
+                    <Ionicons name="chevron-forward" size={16} color={colors.textSecondary} />
+                  </VISTACard>
+                </Pressable>
               )}
 
               <Text style={{ fontSize: 13, fontWeight: '700', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
@@ -474,7 +515,13 @@ export default function VistaRidesScreen({ navigation }: Props) {
               </VISTACard>
 
               <VISTAButton
-                title={submitting ? 'Requesting...' : `Request Ride — UGX ${totalUgx.toLocaleString()}`}
+                title={
+                  submitting
+                    ? mode === 'later' ? 'Scheduling...' : 'Requesting...'
+                    : mode === 'later'
+                      ? `Schedule Ride — UGX ${totalUgx.toLocaleString()}`
+                      : `Request Ride — UGX ${totalUgx.toLocaleString()}`
+                }
                 variant="accent"
                 loading={submitting}
                 onPress={handleConfirm}
@@ -509,6 +556,14 @@ export default function VistaRidesScreen({ navigation }: Props) {
           ))}
         </BottomSheetView>
       </BottomSheetModal>
+
+      <DatePickerSheet
+        ref={dateSheetRef}
+        title="Pickup Date & Time"
+        mode="datetime"
+        minimumDate={new Date()}
+        onConfirm={setScheduledFor}
+      />
 
       <LocationSearchSheet
         ref={locationSheetRef}

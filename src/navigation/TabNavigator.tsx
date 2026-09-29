@@ -27,6 +27,7 @@ import TrackingScreen from '../screens/trips/TrackingScreen';
 import AlertsScreen from '../screens/alerts/AlertsScreen';
 
 import ProfileScreen from '../screens/profile/ProfileScreen';
+import EditProfileScreen from '../screens/profile/EditProfileScreen';
 import SettingsScreen from '../screens/profile/SettingsScreen';
 import LanguageScreen from '../screens/profile/LanguageScreen';
 import PaymentMethodsScreen from '../screens/profile/PaymentMethodsScreen';
@@ -131,6 +132,7 @@ function ProfileStackNavigator() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerTintColor: colors.navy }}>
       <ProfileStack.Screen name="Profile" component={ProfileScreen} options={{ title: 'Profile', ...rootHeaderOptions }} />
+      <ProfileStack.Screen name="EditProfile" component={EditProfileScreen} options={{ title: 'Edit Profile', ...pushedHeaderOptions }} />
       <ProfileStack.Screen name="Settings" component={SettingsScreen} options={{ title: 'Settings', ...pushedHeaderOptions }} />
       <ProfileStack.Screen name="Language" component={LanguageScreen} options={{ title: 'Language', ...pushedHeaderOptions }} />
       <ProfileStack.Screen name="PaymentMethods" component={PaymentMethodsScreen} options={{ title: 'Payment Methods', ...pushedHeaderOptions }} />

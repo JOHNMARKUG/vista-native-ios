@@ -25,6 +25,7 @@ export type AlertsStackParamList = {
 
 export type ProfileStackParamList = {
   Profile: undefined;
+  EditProfile: undefined;
   Settings: undefined;
   Language: undefined;
   PaymentMethods: undefined;
