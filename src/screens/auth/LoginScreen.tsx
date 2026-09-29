@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
 import { Ionicons } from '@expo/vector-icons';
 import * as AppleAuthentication from 'expo-apple-authentication';
-import { GoogleSignin, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
+import { GoogleSignin, GoogleSigninButton, isErrorWithCode, isSuccessResponse, statusCodes } from '@react-native-google-signin/google-signin';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { AuthStackParamList } from '../../navigation/types';
 import { useAuth } from '../../context/AuthContext';
@@ -239,26 +239,20 @@ export default function LoginScreen({ navigation }: Props) {
             />
           )}
 
-          {/* Styled to match the black Apple button above (same fill, height,
-              corner radius, white glyph) — the two used to look like they
-              belonged to different apps side by side. */}
-          <Pressable
+          {/* Google's own native button, for the same reason the Apple button
+              above is native and not a hand-rolled Pressable: a custom
+              Pressable+View with an inline backgroundColor rendered
+              completely invisible (but still tappable) on a real signed
+              build — this exact class of RN styling bug can't happen to a
+              control the OS/SDK draws itself. GoogleSigninButton's "dark"
+              color already matches the Apple button's black pill. */}
+          <GoogleSigninButton
+            size={GoogleSigninButton.Size.Wide}
+            color={GoogleSigninButton.Color.Dark}
+            style={{ width: '100%', height: 52, opacity: googleLoading ? 0.8 : 1 }}
             onPress={handleGoogle}
             disabled={googleLoading}
-            style={({ pressed }) => ({
-              height: 52,
-              borderRadius: radius.button,
-              backgroundColor: '#000000',
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 10,
-              opacity: pressed || googleLoading ? 0.7 : 1,
-            })}
-          >
-            <Ionicons name="logo-google" size={18} color="#FFFFFF" />
-            <Text style={{ fontSize: 17, fontWeight: '600', color: '#FFFFFF' }}>Continue with Google</Text>
-          </Pressable>
+          />
         </View>
 
         <Pressable
